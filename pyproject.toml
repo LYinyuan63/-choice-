@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qianji-data-mini"
+version = "0.3.2"
+description = "Lightweight four-source financial data ingestion, SQLite storage, REST service and OpenBB provider."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "openpyxl>=3.1,<4",
+  "pandas>=2.0,<3",
+  "pydantic>=2.7,<3",
+  "python-dotenv>=1.0,<2",
+  "requests>=2.31,<3",
+  "tushare>=1.4,<2",
+  "uvicorn>=0.30,<1",
+]
+
+[project.optional-dependencies]
+openbb = ["openbb>=4.7,<5", "openbb-core>=1.5,<2"]
+dev = ["pytest>=8,<9", "httpx2>=2.12,<3"]
+
+[project.scripts]
+qianji-data = "qianji_data_mini.cli:main"
+
+[project.entry-points."openbb_provider_extension"]
+qianji = "qianji_data_mini.openbb_provider.provider:provider"
+
+[tool.setuptools.packages.find]
+where = ["src"]

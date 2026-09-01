@@ -1,0 +1,7 @@
+openbb<5,>=4.7.1
+openbb-core<2,>=1.6.8
+pandas<3,>=2.0
+python-dateutil<3,>=2.9
+
+[dev]
+pytest<10,>=8

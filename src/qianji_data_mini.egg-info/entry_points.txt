@@ -1,0 +1,5 @@
+[console_scripts]
+qianji-data = qianji_data_mini.cli:main
+
+[openbb_provider_extension]
+qianji = qianji_data_mini.openbb_provider.provider:provider

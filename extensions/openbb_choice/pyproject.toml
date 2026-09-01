@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openbb-choice"
+version = "0.1.2"
+description = "Choice EmQuantAPI provider extension for OpenBB Platform."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = {text = "AGPL-3.0-only"}
+dependencies = [
+  "openbb>=4.7.1,<5",
+  "openbb-core>=1.6.8,<2",
+  "pandas>=2.0,<3",
+  "python-dateutil>=2.9,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.entry-points."openbb_provider_extension"]
+choice = "openbb_choice.provider:provider"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["openbb_choice*"]

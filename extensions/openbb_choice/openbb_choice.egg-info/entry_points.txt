@@ -1,0 +1,2 @@
+[openbb_provider_extension]
+choice = openbb_choice.provider:provider

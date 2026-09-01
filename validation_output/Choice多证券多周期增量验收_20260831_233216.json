@@ -1,0 +1,594 @@
+{
+  "generated_at": "2026-09-01T06:32:18.869917+00:00",
+  "python": "d:\\minicoda3\\envs\\dm311\\python.exe",
+  "project_root": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini",
+  "database": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db",
+  "symbols": [
+    "000001.SZ",
+    "601988.SH",
+    "510300.SH"
+  ],
+  "period_range": [
+    "2025-08-25",
+    "2026-08-30"
+  ],
+  "ingest_range": [
+    "2026-07-16",
+    "2026-08-30"
+  ],
+  "credentials_included": false,
+  "boundary": "weekly/monthly direct validation only; SQLite stores unadjusted daily bars",
+  "period_calls": [
+    {
+      "period": "daily",
+      "status": "PASS",
+      "rows": 738,
+      "symbols": 3,
+      "skipped_empty_rows": 0,
+      "error": ""
+    },
+    {
+      "period": "weekly",
+      "status": "PASS",
+      "rows": 156,
+      "symbols": 3,
+      "skipped_empty_rows": 0,
+      "error": ""
+    },
+    {
+      "period": "monthly",
+      "status": "PASS",
+      "rows": 37,
+      "symbols": 3,
+      "skipped_empty_rows": 0,
+      "error": ""
+    }
+  ],
+  "skipped_empty_placeholders": [],
+  "frequency_checks": [
+    {
+      "period": "daily",
+      "symbol": "000001.SZ",
+      "rows": 246,
+      "first_date": "2025-08-25",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 1.0,
+      "expected_gap_days": "1-5",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "daily",
+      "symbol": "601988.SH",
+      "rows": 246,
+      "first_date": "2025-08-25",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 1.0,
+      "expected_gap_days": "1-5",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "daily",
+      "symbol": "510300.SH",
+      "rows": 246,
+      "first_date": "2025-08-25",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 1.0,
+      "expected_gap_days": "1-5",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "weekly",
+      "symbol": "000001.SZ",
+      "rows": 52,
+      "first_date": "2025-08-29",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 7.0,
+      "expected_gap_days": "5-10",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "weekly",
+      "symbol": "601988.SH",
+      "rows": 52,
+      "first_date": "2025-08-29",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 7.0,
+      "expected_gap_days": "5-10",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "weekly",
+      "symbol": "510300.SH",
+      "rows": 52,
+      "first_date": "2025-08-29",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 7.0,
+      "expected_gap_days": "5-10",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "monthly",
+      "symbol": "000001.SZ",
+      "rows": 12,
+      "first_date": "2025-08-29",
+      "last_date": "2026-07-31",
+      "median_calendar_gap_days": 31.0,
+      "expected_gap_days": "20-40",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "monthly",
+      "symbol": "601988.SH",
+      "rows": 12,
+      "first_date": "2025-08-29",
+      "last_date": "2026-07-31",
+      "median_calendar_gap_days": 31.0,
+      "expected_gap_days": "20-40",
+      "frequency_check": "PASS"
+    },
+    {
+      "period": "monthly",
+      "symbol": "510300.SH",
+      "rows": 13,
+      "first_date": "2025-08-29",
+      "last_date": "2026-08-28",
+      "median_calendar_gap_days": 30.5,
+      "expected_gap_days": "20-40",
+      "frequency_check": "PASS"
+    }
+  ],
+  "period_ordering": [
+    {
+      "symbol": "000001.SZ",
+      "daily_rows": 246,
+      "weekly_rows": 52,
+      "monthly_rows": 12,
+      "daily_gt_weekly_gt_monthly": true
+    },
+    {
+      "symbol": "601988.SH",
+      "daily_rows": 246,
+      "weekly_rows": 52,
+      "monthly_rows": 12,
+      "daily_gt_weekly_gt_monthly": true
+    },
+    {
+      "symbol": "510300.SH",
+      "daily_rows": 246,
+      "weekly_rows": 52,
+      "monthly_rows": 13,
+      "daily_gt_weekly_gt_monthly": true
+    }
+  ],
+  "ingestion_runs": [
+    {
+      "run": "第一次",
+      "status": "PASS",
+      "received_rows": 96,
+      "stored_rows": 96,
+      "failed_symbols": "{}",
+      "error": ""
+    },
+    {
+      "run": "第二次",
+      "status": "PASS",
+      "received_rows": 96,
+      "stored_rows": 96,
+      "failed_symbols": "{}",
+      "error": ""
+    }
+  ],
+  "idempotency": [
+    {
+      "count_before": 96,
+      "count_after_first": 96,
+      "count_after_second": 96,
+      "second_minus_first": 0,
+      "idempotent": true
+    }
+  ],
+  "database_quality": [
+    {
+      "check": "数据库记录非空",
+      "threshold": ">0",
+      "actual": 96,
+      "passed": true
+    },
+    {
+      "check": "覆盖全部证券",
+      "threshold": "=3",
+      "actual": 3,
+      "passed": true
+    },
+    {
+      "check": "主键重复",
+      "threshold": "=0",
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "check": "关键字段缺失",
+      "threshold": "=0",
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "check": "OHLC异常",
+      "threshold": "=0",
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "check": "成交量负数",
+      "threshold": "=0",
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "check": "标准单位",
+      "threshold": "share/CNY",
+      "actual": "符合",
+      "passed": true
+    },
+    {
+      "check": "SQLite完整性",
+      "threshold": "ok",
+      "actual": "ok",
+      "passed": true
+    }
+  ],
+  "qianji_reads": [
+    {
+      "symbol": "000001.SZ",
+      "status": "PASS",
+      "rows": 32,
+      "error": ""
+    },
+    {
+      "symbol": "601988.SH",
+      "status": "PASS",
+      "rows": 32,
+      "error": ""
+    },
+    {
+      "symbol": "510300.SH",
+      "status": "PASS",
+      "rows": 32,
+      "error": ""
+    }
+  ],
+  "comparison_summary": [
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "open",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "high",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "low",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "close",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "volume",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "amount",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "previous_close",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "sqlite",
+      "field": "change_percent",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "open",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "high",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "low",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "close",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "volume",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "amount",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "previous_close",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    },
+    {
+      "left": "choice",
+      "right": "qianji",
+      "field": "change_percent",
+      "matched_rows": 96,
+      "max_abs_diff": 0.0,
+      "mismatch_rows": 0,
+      "status": "PASS"
+    }
+  ],
+  "quality_gates": [
+    {
+      "category": "多周期",
+      "check": "daily直连成功",
+      "threshold": "PASS",
+      "actual": "PASS",
+      "status": "PASS",
+      "evidence": "period_calls"
+    },
+    {
+      "category": "多证券",
+      "check": "daily覆盖全部证券",
+      "threshold": "3只",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "frequency_detail"
+    },
+    {
+      "category": "多周期",
+      "check": "weekly直连成功",
+      "threshold": "PASS",
+      "actual": "PASS",
+      "status": "PASS",
+      "evidence": "period_calls"
+    },
+    {
+      "category": "多证券",
+      "check": "weekly覆盖全部证券",
+      "threshold": "3只",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "frequency_detail"
+    },
+    {
+      "category": "多周期",
+      "check": "monthly直连成功",
+      "threshold": "PASS",
+      "actual": "PASS",
+      "status": "PASS",
+      "evidence": "period_calls"
+    },
+    {
+      "category": "多证券",
+      "check": "monthly覆盖全部证券",
+      "threshold": "3只",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "frequency_detail"
+    },
+    {
+      "category": "多周期",
+      "check": "日周月中位间隔符合预期",
+      "threshold": "全部PASS",
+      "actual": 9,
+      "status": "PASS",
+      "evidence": "frequency_detail"
+    },
+    {
+      "category": "多周期",
+      "check": "日线行数>周线>月线",
+      "threshold": "全部证券为True",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "period_ordering"
+    },
+    {
+      "category": "源数据占位",
+      "check": "全空占位未进入OpenBB标准结果",
+      "threshold": "标准结果OHLC缺失数=0",
+      "actual": "缺失=0；隔离=0",
+      "status": "PASS",
+      "evidence": "empty_placeholders"
+    },
+    {
+      "category": "增量落库",
+      "check": "第一次落库无失败证券",
+      "threshold": "失败数=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "ingestion_runs"
+    },
+    {
+      "category": "增量落库",
+      "check": "第二次落库无失败证券",
+      "threshold": "失败数=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "ingestion_runs"
+    },
+    {
+      "category": "增量落库",
+      "check": "重复运行幂等",
+      "threshold": "第二次后记录数=第一次后记录数",
+      "actual": true,
+      "status": "PASS",
+      "evidence": "idempotency"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "数据库记录非空",
+      "threshold": ">0",
+      "actual": 96,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "覆盖全部证券",
+      "threshold": "=3",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "主键重复",
+      "threshold": "=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "关键字段缺失",
+      "threshold": "=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "OHLC异常",
+      "threshold": "=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "成交量负数",
+      "threshold": "=0",
+      "actual": 0,
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "标准单位",
+      "threshold": "share/CNY",
+      "actual": "符合",
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "SQLite质量",
+      "check": "SQLite完整性",
+      "threshold": "ok",
+      "actual": "ok",
+      "status": "PASS",
+      "evidence": "db_quality"
+    },
+    {
+      "category": "OpenBB读库",
+      "check": "qianji逐只证券读取成功",
+      "threshold": "全部PASS",
+      "actual": 3,
+      "status": "PASS",
+      "evidence": "qianji_reads"
+    },
+    {
+      "category": "跨层一致性",
+      "check": "Choice直连=SQLite",
+      "threshold": "字段差异0且行数一致",
+      "actual": 96,
+      "status": "PASS",
+      "evidence": "comparison_summary"
+    },
+    {
+      "category": "跨层一致性",
+      "check": "Choice直连=qianji",
+      "threshold": "字段差异0且行数一致",
+      "actual": 96,
+      "status": "PASS",
+      "evidence": "comparison_summary"
+    }
+  ],
+  "passed_gates": 23,
+  "failed_gates": 0
+}
