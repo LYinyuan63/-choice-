@@ -13,13 +13,26 @@
 2. 把字段统一为同一套 OHLCV 结构；
 3. 保存到本机 SQLite 数据库；
 4. 通过 Python、REST、Excel 和 OpenBB `provider="qianji"` 消费；
-5. 在没有商业接口权限时，用 `mock` 模拟源完整验收流程。
+5. 保存Choice证券主数据和沪深交易日历；
+6. 在没有商业接口权限时，用 `mock` 模拟源完整验收流程。
 
-> 本版本只做“选定证券 + 指定日期范围的日线行情”。它不是四个平台的全量下载器，也不包含新闻、研报、财务报表和实时推送。
+> 行情范围仍是“选定证券 + 指定日期范围的日线”；Choice另已增加证券主数据和交易日历公司库落地。项目仍不包含新闻、研报、财务报表和实时推送。
 
 ## 最简单的运行方法
 
 打开 `notebooks/01_本地小型数据基座演示.ipynb`，从上到下运行。Notebook 会安装项目、生成模拟行情、落入 SQLite、调用模拟客户端并导出 Excel。
+
+Choice专项Notebook按顺序使用：
+
+1. `00_openBB环境构建.ipynb`：每次覆盖补丁后，使用当前Notebook内核快速重装两个本地包、构建OpenBB并检查Provider；
+2. `02_Choice_OpenBB插件真实验证.ipynb`：验证Choice直连Provider；
+3. `03_Choice真实数据落库验收.ipynb`：验证Choice→SQLite→qianji闭环；
+4. `04_Choice数据地图生成.ipynb`：扫描代码、SQLite与OpenBB状态，导出数据地图Excel/JSON，不再次调用Choice接口；
+5. `05_Choice多证券与多周期增量验收.ipynb`：验证多证券、日/周/月频率、重复增量写入和三层数据一致性，并单独导出Choice全空月线占位记录。
+6. `06_Choice证券主数据与交易日历落库验收.ipynb`：验证Choice证券身份信息、沪深自然日历、幂等落库及行情日期关联。
+7. `07_Choice证券主数据_OpenBB查询验收.ipynb`：验证Choice主数据从SQLite经`provider="qianji"`按代码和中文名称查询，不再次调用Choice。
+8. `08_Choice长期交易日历与主数据增量刷新验收.ipynb`：建立可配置长期沪深日历、全A成员快照与新增/退出板块/字段变更记录，并验证同一快照重复刷新不产生重复数据。
+9. `09_Choice财务报表与分红小样本验收.ipynb`：对3只证券、2个报告期探测Choice财务与分红指标权限，保存三张财务报表和分红原始尺度事实，并验证重复运行幂等。
 
 ## 四个真实数据源的前置条件
 
@@ -74,12 +87,26 @@ result = obb.equity.price.historical(
 result.to_dataframe()
 ```
 
+证券主数据落库后，可以通过公司库Provider查询：
+
+```python
+result = obb.equity.search(
+    query="平安银行",
+    provider="qianji",
+    source="choice",
+)
+result.to_dataframe()
+```
+
 OpenBB 在这里是统一消费和路由层，SQLite 才是这个小型版本的实际存储层。
 
 ## 文件说明
 
 - `src/qianji_data_mini/adapters/`：四源适配器和模拟适配器；
 - `src/qianji_data_mini/db.py`：SQLite 表结构、幂等写入、统一查询；
+- `src/qianji_data_mini/reference_ingest.py`：Choice证券主数据与交易日历编排；
+- `src/qianji_data_mini/reference_refresh.py`：Choice长期日历、成员快照和主数据增量变更编排；
+- `src/qianji_data_mini/financial_ingest.py`：Choice财务报表、分红指标探测和小样本落库编排；
 - `src/qianji_data_mini/service.py`：本地 REST 服务；
 - `src/qianji_data_mini/openbb_provider/`：OpenBB 私有 Provider；
 - `clients/`：Python、REST、Excel、OpenBB 四种调用示例；
@@ -90,6 +117,9 @@ OpenBB 在这里是统一消费和路由层，SQLite 才是这个小型版本的
 
 - Wind、Choice 的 Python 模块来自官方客户端安装包，不能通过普通 `pip` 完整替代；
 - 四家厂商的指标代码、复权口径、成交量/成交额单位会随产品版本和购买权限变化；
+- Choice证券主数据已通过公司库注册为OpenBB `EquitySearch` Fetcher；查询不会再次调用Choice接口；
+- Choice全A板块的成员退出只记录为`removed`，不会仅凭板块变化自动标记为退市；退市状态仍以明确退市字段为准；
+- Choice财务和分红金额在未核对命令生成器单位前保存为`unit=vendor_raw`，不擅自换算成元或万元；
 - 本项目把 Tushare 日线 `vol` 从“手”乘以 100 转为“股”，把 `amount` 从“千元”乘以 1000 转为“元”；
 - 其他三源的量额倍率可在 `.env` 调整，首次接入必须抽样核对；
 - 默认 REST 只监听 `127.0.0.1`；没有设置 API Key 时不要直接暴露到公网。

@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import date, datetime
+from bisect import bisect_left, bisect_right
+from datetime import date, datetime, timedelta
+from typing import Any, Iterable
 
 from qianji_data_mini.adapters.base import AdapterError, DailyBarAdapter
 from qianji_data_mini.config import env_float
-from qianji_data_mini.models import DailyBar
+from qianji_data_mini.models import (
+    DailyBar,
+    DividendFact,
+    FinancialStatementFact,
+    SecurityMaster,
+    TradingCalendarDay,
+)
 
 
 def normalize_choice_date(value: object) -> date:
@@ -30,6 +38,68 @@ def normalize_choice_date(value: object) -> date:
         return date(year, month, day)
     except ValueError as exc:
         raise AdapterError(f"Choice 返回了无效日期：{value!r}") from exc
+
+
+def normalize_choice_optional_date(value: object) -> date | None:
+    """Normalize optional Choice dates without turning placeholders into dates."""
+    if value in (None, "", "--", "None", "null", 0, "0"):
+        return None
+    return normalize_choice_date(value)
+
+
+def _flatten_values(value: object) -> list[object]:
+    if isinstance(value, dict):
+        flattened: list[object] = []
+        for item in value.values():
+            flattened.extend(_flatten_values(item))
+        return flattened
+    if isinstance(value, (list, tuple, set)):
+        flattened = []
+        for item in value:
+            flattened.extend(_flatten_values(item))
+        return flattened
+    return [value]
+
+
+def _exchange_from_symbol(symbol: str) -> str:
+    suffix = symbol.upper().rsplit(".", 1)[-1]
+    return {"SH": "SSE", "SZ": "SZSE", "BJ": "BSE"}.get(suffix, suffix)
+
+
+def _asset_type_from_symbol(symbol: str) -> str:
+    code, _, suffix = symbol.upper().partition(".")
+    if (suffix == "SH" and code.startswith("5")) or (
+        suffix == "SZ" and code.startswith(("15", "16"))
+    ):
+        return "etf"
+    return "equity"
+
+
+def _fact_value(value: object) -> tuple[float | None, str | None]:
+    """Preserve vendor values while extracting a safe numeric representation."""
+    if value in (None, "", "--", "None", "null", "NULL"):
+        return None, None
+    if isinstance(value, bool):
+        return float(value), str(value)
+    if isinstance(value, (int, float)):
+        number = float(value)
+        if number != number or number in (float("inf"), float("-inf")):
+            return None, str(value)
+        return number, str(value)
+    text = str(value).strip()
+    try:
+        number = float(text.replace(",", ""))
+    except ValueError:
+        number = None
+    return number, text or None
+
+
+def _format_options(template: str, report_date: date) -> str:
+    return template.format(
+        report_date=report_date.isoformat(),
+        report_date_compact=report_date.strftime("%Y%m%d"),
+        year=report_date.year,
+    )
 
 
 class ChoiceAdapter(DailyBarAdapter):
@@ -141,6 +211,337 @@ class ChoiceAdapter(DailyBarAdapter):
                 )
             )
         return rows
+
+    @staticmethod
+    def _parse_css_response(response: Any, symbols: list[str]) -> list[tuple[str, dict[str, Any]]]:
+        indicators = [
+            str(item).upper()
+            for item in (getattr(response, "Indicators", []) or [])
+        ]
+        payload = getattr(response, "Data", {})
+        if not indicators:
+            raise AdapterError("Choice css 未返回 Indicators。")
+
+        parsed: list[tuple[str, dict[str, Any]]] = []
+        if isinstance(payload, dict):
+            for symbol in symbols:
+                values = payload.get(symbol)
+                if values is None:
+                    values = payload.get(symbol.upper())
+                if values is None:
+                    raise AdapterError(f"Choice css 未返回 {symbol} 的主数据。")
+                if isinstance(values, (list, tuple)) and len(values) == 1 and isinstance(values[0], (list, tuple)):
+                    values = values[0]
+                values = list(values) if isinstance(values, (list, tuple)) else [values]
+                if len(values) != len(indicators):
+                    raise AdapterError(
+                        f"Choice css 返回字段数不匹配：{symbol}，"
+                        f"Indicators={len(indicators)}，Data={len(values)}。"
+                    )
+                parsed.append((symbol, dict(zip(indicators, values))))
+            return parsed
+
+        values = list(payload or [])
+        expected = len(symbols) * len(indicators)
+        if len(values) != expected:
+            raise AdapterError(
+                f"Choice css 返回结构无法识别：期望{expected}个值，实际{len(values)}个。"
+            )
+        for index, symbol in enumerate(symbols):
+            start = index * len(indicators)
+            parsed.append(
+                (symbol, dict(zip(indicators, values[start:start + len(indicators)])))
+            )
+        return parsed
+
+    def fetch_sector_symbols(
+        self,
+        *,
+        sector_code: str = "001004",
+        as_of_date: date,
+    ) -> list[str]:
+        """Fetch a Choice sector constituent list; 001004 is all A shares."""
+        response = self.c.sector(sector_code, as_of_date.isoformat())
+        if getattr(response, "ErrorCode", -1) != 0:
+            raise AdapterError(
+                f"Choice sector 返回错误（{getattr(response, 'ErrorCode', -1)}）："
+                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+            )
+        symbols = []
+        for item in _flatten_values(getattr(response, "Data", []) or []):
+            text = str(item).strip().upper()
+            if re.match(r"^[0-9A-Z]+\.(SH|SZ|BJ)$", text):
+                symbols.append(text)
+        unique = list(dict.fromkeys(symbols))
+        if not unique:
+            raise AdapterError(f"Choice sector {sector_code} 未返回可识别证券代码。")
+        return unique
+
+    def fetch_security_master(
+        self,
+        *,
+        symbols: Iterable[str],
+        as_of_date: date,
+        batch_size: int = 100,
+    ) -> list[SecurityMaster]:
+        """Fetch normalized identity records with permission-tolerant indicators."""
+        symbol_list = list(
+            dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
+        )
+        if not symbol_list:
+            raise ValueError("证券主数据至少需要一个证券代码。")
+        if batch_size < 1:
+            raise ValueError("batch_size 必须大于0。")
+
+        configured = os.getenv(
+            "CHOICE_MASTER_INDICATORS",
+            "NAME,LISTDATE,DELISTDATE",
+        ).strip()
+        indicator_candidates = list(
+            dict.fromkeys(
+                item for item in [configured, "NAME,LISTDATE", "NAME"] if item
+            )
+        )
+        css_options = os.getenv("CHOICE_MASTER_CSS_OPTIONS", "").strip()
+        records: list[SecurityMaster] = []
+
+        for offset in range(0, len(symbol_list), batch_size):
+            chunk = symbol_list[offset:offset + batch_size]
+            parsed_rows: list[tuple[str, dict[str, Any]]] | None = None
+            attempt_errors = []
+            for indicators in indicator_candidates:
+                response = self.c.css(
+                    ",".join(chunk),
+                    indicators,
+                    css_options,
+                )
+                if getattr(response, "ErrorCode", -1) != 0:
+                    attempt_errors.append(
+                        f"{indicators}: ErrorCode={getattr(response, 'ErrorCode', -1)} "
+                        f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+                    )
+                    continue
+                try:
+                    parsed_rows = self._parse_css_response(response, chunk)
+                    break
+                except AdapterError as exc:
+                    attempt_errors.append(f"{indicators}: {exc}")
+
+            if parsed_rows is None:
+                raise AdapterError(
+                    "Choice证券主数据css调用全部失败；请在Choice命令生成器确认指标权限。"
+                    + " | ".join(attempt_errors)
+                )
+
+            for symbol, raw in parsed_rows:
+                name_value = raw.get("NAME")
+                name = str(name_value).strip() if name_value not in (None, "", "--") else symbol
+                list_date = normalize_choice_optional_date(raw.get("LISTDATE"))
+                delist_date = normalize_choice_optional_date(raw.get("DELISTDATE"))
+                status = (
+                    "delisted"
+                    if delist_date is not None and delist_date <= as_of_date
+                    else "active"
+                )
+                raw_with_meta = dict(raw)
+                raw_with_meta["_name_source"] = "choice" if name != symbol else "symbol_fallback"
+                raw_with_meta["_available_indicators"] = sorted(raw)
+                records.append(
+                    SecurityMaster(
+                        symbol=symbol,
+                        name=name,
+                        exchange=_exchange_from_symbol(symbol),
+                        asset_type=_asset_type_from_symbol(symbol),
+                        currency="CNY",
+                        list_date=list_date,
+                        delist_date=delist_date,
+                        status=status,
+                        source=self.source,
+                        as_of_date=as_of_date,
+                        raw=raw_with_meta,
+                    )
+                )
+        return records
+
+    def fetch_trading_calendar(
+        self,
+        *,
+        market: str,
+        start_date: date,
+        end_date: date,
+    ) -> list[TradingCalendarDay]:
+        """Fetch open dates and expand them into an explicit daily calendar."""
+        if start_date > end_date:
+            raise ValueError("start_date 不能晚于 end_date。")
+        market_code = market.strip().upper()
+        options = f"Period=1,Order=1,Market={market_code}"
+        response = self.c.tradedates(
+            start_date.isoformat(),
+            end_date.isoformat(),
+            options,
+        )
+        if getattr(response, "ErrorCode", -1) != 0:
+            raise AdapterError(
+                f"Choice tradedates {market_code} 返回错误"
+                f"（{getattr(response, 'ErrorCode', -1)}）："
+                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+            )
+
+        open_dates = sorted(
+            {
+                normalize_choice_date(item)
+                for item in _flatten_values(getattr(response, "Data", []) or [])
+                if item not in (None, "", "--")
+            }
+        )
+        open_dates = [item for item in open_dates if start_date <= item <= end_date]
+        if not open_dates:
+            raise AdapterError(
+                f"Choice tradedates {market_code} 在指定范围内未返回交易日。"
+            )
+        open_set = set(open_dates)
+        records = []
+        current = start_date
+        while current <= end_date:
+            previous_index = bisect_left(open_dates, current) - 1
+            next_index = bisect_right(open_dates, current)
+            records.append(
+                TradingCalendarDay(
+                    market=market_code,
+                    date=current,
+                    is_open=current in open_set,
+                    previous_open_date=(
+                        open_dates[previous_index] if previous_index >= 0 else None
+                    ),
+                    next_open_date=(
+                        open_dates[next_index] if next_index < len(open_dates) else None
+                    ),
+                    source=self.source,
+                )
+            )
+            current += timedelta(days=1)
+        return records
+
+    def probe_css_indicator(
+        self,
+        *,
+        symbol: str,
+        report_date: date,
+        indicator: str,
+        options_template: str,
+    ) -> tuple[bool, str]:
+        """Probe one indicator using css without assuming cfc response layout."""
+        response = self.c.css(
+            symbol.upper(),
+            indicator.upper(),
+            _format_options(options_template, report_date),
+        )
+        if getattr(response, "ErrorCode", -1) != 0:
+            return False, (
+                f"ErrorCode={getattr(response, 'ErrorCode', -1)} "
+                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+            )
+        try:
+            self._parse_css_response(response, [symbol.upper()])
+        except AdapterError as exc:
+            return False, str(exc)
+        return True, "ok"
+
+    def fetch_financial_statement_facts(
+        self,
+        *,
+        symbols: Iterable[str],
+        report_date: date,
+        statement_type: str,
+        indicators: Iterable[str],
+        options_template: str,
+    ) -> list[FinancialStatementFact]:
+        symbol_list = list(
+            dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
+        )
+        indicator_list = list(
+            dict.fromkeys(str(item).strip().upper() for item in indicators if str(item).strip())
+        )
+        if statement_type not in {"income", "balance", "cashflow"}:
+            raise ValueError("statement_type必须是income、balance或cashflow。")
+        if not symbol_list or not indicator_list:
+            return []
+        response = self.c.css(
+            ",".join(symbol_list),
+            ",".join(indicator_list),
+            _format_options(options_template, report_date),
+        )
+        if getattr(response, "ErrorCode", -1) != 0:
+            raise AdapterError(
+                f"Choice css {statement_type}返回错误"
+                f"（{getattr(response, 'ErrorCode', -1)}）："
+                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+            )
+        parsed = self._parse_css_response(response, symbol_list)
+        records: list[FinancialStatementFact] = []
+        for symbol, raw in parsed:
+            for indicator, value in raw.items():
+                numeric, text = _fact_value(value)
+                records.append(
+                    FinancialStatementFact(
+                        symbol=symbol,
+                        statement_type=statement_type,
+                        report_date=report_date,
+                        indicator=indicator,
+                        value_numeric=numeric,
+                        value_text=text,
+                        currency="CNY",
+                        unit="vendor_raw",
+                        raw={"value": value},
+                    )
+                )
+        return records
+
+    def fetch_dividend_facts(
+        self,
+        *,
+        symbols: Iterable[str],
+        report_date: date,
+        indicators: Iterable[str],
+        options_template: str,
+    ) -> list[DividendFact]:
+        symbol_list = list(
+            dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
+        )
+        indicator_list = list(
+            dict.fromkeys(str(item).strip().upper() for item in indicators if str(item).strip())
+        )
+        if not symbol_list or not indicator_list:
+            return []
+        response = self.c.css(
+            ",".join(symbol_list),
+            ",".join(indicator_list),
+            _format_options(options_template, report_date),
+        )
+        if getattr(response, "ErrorCode", -1) != 0:
+            raise AdapterError(
+                "Choice css dividend返回错误"
+                f"（{getattr(response, 'ErrorCode', -1)}）："
+                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+            )
+        parsed = self._parse_css_response(response, symbol_list)
+        records: list[DividendFact] = []
+        for symbol, raw in parsed:
+            for indicator, value in raw.items():
+                numeric, text = _fact_value(value)
+                records.append(
+                    DividendFact(
+                        symbol=symbol,
+                        report_date=report_date,
+                        indicator=indicator,
+                        value_numeric=numeric,
+                        value_text=text,
+                        currency="CNY",
+                        unit="vendor_raw",
+                        raw={"value": value},
+                    )
+                )
+        return records
 
     def close(self) -> None:
         try:
