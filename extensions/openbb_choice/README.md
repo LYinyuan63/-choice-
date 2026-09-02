@@ -7,8 +7,9 @@ Choice EmQuantAPI data provider extension for OpenBB Platform. Its package and F
 | OpenBB Fetcher | Python call | HTTP route | Status |
 |---|---|---|---|
 | `EquityHistorical` | `obb.equity.price.historical(..., provider="choice")` | `GET /api/v1/equity/price/historical?provider=choice` | Implemented; real-account verification required |
+| `EquityQuote` | `obb.equity.price.quote(..., provider="choice")` | `GET /api/v1/equity/price/quote?provider=choice` | One-shot `csqsnapshot`; real-account verification required |
 
-The first release intentionally does not register quote, profile, search, or financial-statement Fetchers. Add them only after the daily historical route passes a real Choice account acceptance test.
+The extension does not register profile, search, or financial-statement Fetchers. Company-database search and financial queries are provided by the separate `qianji` Provider.
 
 ## Prerequisites
 
@@ -78,6 +79,17 @@ print(result.provider)
 print(result.results[:3])
 ```
 
+One-shot quote snapshot:
+
+```python
+quote = obb.equity.price.quote(
+    symbol="000001.SZ,600519.SH",
+    use_cache=False,
+    provider="choice",
+)
+print(quote.to_dataframe())
+```
+
 Expected provider value:
 
 ```text
@@ -111,9 +123,11 @@ This matches the standard route used by the reference Tushare and AKShare provid
 - `Period`: Choice `1/2/3` maps to `daily/weekly/monthly`.
 - `AdjustFlag`: Choice `1/2/3` maps to unadjusted/`hfq`/`qfq`.
 - `change_percent`: converted from percentage points to a normalized decimal. `1.25` from Choice becomes `0.0125` in OpenBB.
+- Weekly/monthly rows whose four OHLC values are all empty are treated as unfinished-period placeholders: they are skipped with a structured warning. A partly empty OHLC row raises an explicit source-data error.
 - Volume unit: configured as shares; verify the account's actual return against the Choice terminal before changing `CHOICE_VOLUME_MULTIPLIER`.
 - Amount unit: configured as CNY; verify before changing `CHOICE_AMOUNT_MULTIPLIER`.
 - `ForceLogin=1` is blocked unless `CHOICE_ALLOW_FORCE_LOGIN=1` is explicitly set.
+- Real-time quotes use `csqsnapshot`, not the streaming `csq` subscription. This keeps each acceptance run bounded to one request.
 
 ## Development tests
 

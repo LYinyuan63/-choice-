@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 import re
 import warnings
-from datetime import date, datetime
+from datetime import date, datetime, time, timezone
 from math import isnan
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 
 class ChoiceSDKError(RuntimeError):
@@ -148,11 +149,49 @@ def _indicator_series(response: Any, symbol: str) -> tuple[list[str], dict[str, 
     return dates, series
 
 
+def _quote_timestamp(value: Any, received_at: datetime) -> datetime:
+    """Normalize Choice TIME values to a timezone-aware market timestamp."""
+    market_tz = ZoneInfo("Asia/Shanghai")
+    if isinstance(value, datetime):
+        return (
+            value.replace(tzinfo=market_tz)
+            if value.tzinfo is None
+            else value.astimezone(market_tz)
+        )
+    if isinstance(value, time):
+        return datetime.combine(
+            received_at.astimezone(market_tz).date(), value, market_tz
+        )
+    text = str(value or "").strip()
+    for pattern in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y/%m/%d %H:%M",
+        "%H:%M:%S",
+        "%H:%M",
+        "%H%M%S",
+    ):
+        try:
+            parsed = datetime.strptime(text, pattern)
+        except ValueError:
+            continue
+        if pattern.startswith("%H"):
+            parsed = datetime.combine(
+                received_at.astimezone(market_tz).date(), parsed.time()
+            )
+        return parsed.replace(tzinfo=market_tz)
+    return received_at.astimezone(market_tz)
+
+
 class ChoiceClient:
     """One short-lived EmQuantAPI login session used by an OpenBB fetcher."""
 
     indicators = (
         "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "AMOUNT", "PRECLOSE", "PCTCHANGE"
+    )
+    quote_indicators = (
+        "TIME", "PRECLOSE", "OPEN", "HIGH", "LOW", "NOW", "VOLUME", "AMOUNT"
     )
 
     def __init__(self, credentials: dict[str, str] | None = None):
@@ -289,4 +328,99 @@ class ChoiceClient:
                         "timezone": "Asia/Shanghai",
                     }
                 )
+        return records
+
+    def quote_snapshot(self, *, symbols: list[str]) -> list[dict[str, Any]]:
+        """Request one non-streaming Choice quote snapshot for multiple symbols."""
+        symbol_list = list(
+            dict.fromkeys(item.strip().upper() for item in symbols if item.strip())
+        )
+        if not symbol_list:
+            return []
+        response = self.api.csqsnapshot(
+            ",".join(symbol_list),
+            ",".join(self.quote_indicators),
+            os.getenv("CHOICE_CSQSNAPSHOT_OPTIONS", "Ispandas=0"),
+        )
+        error_code = getattr(response, "ErrorCode", -1)
+        if error_code != 0:
+            error_message = getattr(response, "ErrorMsg", "No error message returned")
+            raise ChoiceSDKError(
+                "Choice csqsnapshot failed "
+                f"(ErrorCode={error_code}): {error_message}"
+            )
+
+        indicators = [
+            str(item).upper()
+            for item in (
+                getattr(response, "Indicators", []) or self.quote_indicators
+            )
+        ]
+        payload = getattr(response, "Data", {})
+        if not isinstance(payload, dict):
+            raise ChoiceSDKError("Choice csqsnapshot Data is not a symbol mapping.")
+
+        received_at = datetime.now(timezone.utc)
+        volume_multiplier = float(os.getenv("CHOICE_VOLUME_MULTIPLIER", "1") or 1)
+        amount_multiplier = float(os.getenv("CHOICE_AMOUNT_MULTIPLIER", "1") or 1)
+        records: list[dict[str, Any]] = []
+        for symbol in symbol_list:
+            values = payload.get(symbol)
+            if values is None:
+                values = payload.get(symbol.upper())
+            if values is None:
+                raise ChoiceSDKError(
+                    f"Choice csqsnapshot response has no data for {symbol}."
+                )
+            if (
+                isinstance(values, (list, tuple))
+                and len(values) == 1
+                and isinstance(values[0], (list, tuple))
+            ):
+                values = values[0]
+            values = list(values) if isinstance(values, (list, tuple)) else [values]
+            if len(values) != len(indicators):
+                raise ChoiceSDKError(
+                    "Choice csqsnapshot shape does not match Indicators "
+                    f"for {symbol}."
+                )
+            raw = dict(zip(indicators, values))
+            last_price = _number(raw.get("NOW"))
+            prev_close = _number(raw.get("PRECLOSE"))
+            volume = _number(raw.get("VOLUME"))
+            amount = _number(raw.get("AMOUNT"))
+            quote_time = _quote_timestamp(raw.get("TIME"), received_at)
+            records.append(
+                {
+                    "symbol": symbol,
+                    "exchange": symbol.rsplit(".", 1)[-1],
+                    "last_price": last_price,
+                    "last_timestamp": quote_time,
+                    "open": _number(raw.get("OPEN")),
+                    "high": _number(raw.get("HIGH")),
+                    "low": _number(raw.get("LOW")),
+                    "volume": (
+                        volume * volume_multiplier if volume is not None else None
+                    ),
+                    "prev_close": prev_close,
+                    "change": (
+                        last_price - prev_close
+                        if last_price is not None and prev_close is not None
+                        else None
+                    ),
+                    "change_percent": (
+                        (last_price - prev_close) / prev_close
+                        if last_price is not None and prev_close not in (None, 0)
+                        else None
+                    ),
+                    "quote_time": quote_time,
+                    "amount": amount * amount_multiplier if amount is not None else None,
+                    "source": "choice",
+                    "currency": "CNY",
+                    "timezone": "Asia/Shanghai",
+                    "volume_unit": "share",
+                    "amount_unit": "CNY",
+                    "fetched_at": received_at,
+                }
+            )
         return records

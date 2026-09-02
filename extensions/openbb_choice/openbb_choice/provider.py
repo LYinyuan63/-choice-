@@ -3,6 +3,7 @@
 from openbb_core.provider.abstract.provider import Provider
 
 from openbb_choice.models.equity_historical import ChoiceEquityHistoricalFetcher
+from openbb_choice.models.equity_quote import ChoiceEquityQuoteFetcher
 
 
 provider = Provider(
@@ -16,5 +17,6 @@ provider = Provider(
     ),
     fetcher_dict={
         "EquityHistorical": ChoiceEquityHistoricalFetcher,
+        "EquityQuote": ChoiceEquityQuoteFetcher,
     },
 )

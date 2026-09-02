@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qianji-data-mini"
-version = "0.9.0"
+version = "0.10.0"
 description = "Lightweight four-source financial data ingestion, SQLite storage, REST service and OpenBB provider."
 readme = "README.md"
 requires-python = ">=3.10,<3.14"

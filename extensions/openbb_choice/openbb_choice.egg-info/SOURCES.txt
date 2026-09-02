@@ -10,8 +10,10 @@ openbb_choice.egg-info/requires.txt
 openbb_choice.egg-info/top_level.txt
 openbb_choice/models/__init__.py
 openbb_choice/models/equity_historical.py
+openbb_choice/models/equity_quote.py
 openbb_choice/utils/__init__.py
 openbb_choice/utils/emquant.py
 openbb_choice/utils/validators.py
 tests/test_equity_historical.py
+tests/test_equity_quote.py
 tests/test_provider.py
