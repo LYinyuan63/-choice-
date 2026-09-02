@@ -1,0 +1,139 @@
+{
+  "generated_at": "2026-09-02T06:21:56.548916+00:00",
+  "database": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db",
+  "version": "0.9.0",
+  "choice_api_called": false,
+  "quality_gates": [
+    {
+      "check": "qianji-data-mini版本>=0.9.0",
+      "status": "PASS",
+      "evidence": "0.9.0"
+    },
+    {
+      "check": "SQLite完整性",
+      "status": "PASS",
+      "evidence": "ok"
+    },
+    {
+      "check": "四个OpenBB路由已注册",
+      "status": "PASS",
+      "evidence": "[]"
+    },
+    {
+      "check": "所有查询无错误",
+      "status": "PASS",
+      "evidence": "[]"
+    },
+    {
+      "check": "成功结果均来自qianji",
+      "status": "PASS",
+      "evidence": "[{'dataset': 'income', 'symbol': '000001.SZ', 'provider': 'qianji'}, {'dataset': 'balance', 'symbol': '000001.SZ', 'provider': 'qianji'}, {'dataset': 'cashflow', 'symbol': '000001.SZ', 'provider': 'qianji'}, {'dataset': 'dividend', 'symbol': '000001.SZ', 'provider': 'qianji'}, {'dataset': 'income', 'symbol': '600519.SH', 'provider': 'qianji'}, {'dataset': 'balance', 'symbol': '600519.SH', 'provider': 'qianji'}, {'dataset': 'cashflow', 'symbol': '600519.SH', 'provider': 'qianji'}, {'dataset': 'dividend', 'symbol': '600519.SH', 'provider': 'qianji'}, {'dataset': 'income', 'symbol': '300750.SZ', 'provider': 'qianji'}, {'dataset': 'balance', 'symbol': '300750.SZ', 'provider': 'qianji'}, {'dataset': 'cashflow', 'symbol': '300750.SZ', 'provider': 'qianji'}, {'dataset': 'dividend', 'symbol': '300750.SZ', 'provider': 'qianji'}]"
+    },
+    {
+      "check": "三张报表与SQLite逐项一致",
+      "status": "PASS",
+      "evidence": "rows=60"
+    },
+    {
+      "check": "现金分红与SQLite一致",
+      "status": "PASS",
+      "evidence": "sqlite=4, openbb=4"
+    },
+    {
+      "check": "查询未新增采集日志",
+      "status": "PASS",
+      "evidence": "before=6, after=6"
+    },
+    {
+      "check": "Notebook不导入EmQuantAPI",
+      "status": "PASS",
+      "evidence": "False"
+    }
+  ],
+  "query_audit": [
+    {
+      "dataset": "income",
+      "symbol": "000001.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "balance",
+      "symbol": "000001.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "cashflow",
+      "symbol": "000001.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "dividend",
+      "symbol": "000001.SZ",
+      "provider": "qianji",
+      "rows": 1,
+      "error": ""
+    },
+    {
+      "dataset": "income",
+      "symbol": "600519.SH",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "balance",
+      "symbol": "600519.SH",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "cashflow",
+      "symbol": "600519.SH",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "dividend",
+      "symbol": "600519.SH",
+      "provider": "qianji",
+      "rows": 1,
+      "error": ""
+    },
+    {
+      "dataset": "income",
+      "symbol": "300750.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "balance",
+      "symbol": "300750.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "cashflow",
+      "symbol": "300750.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    },
+    {
+      "dataset": "dividend",
+      "symbol": "300750.SZ",
+      "provider": "qianji",
+      "rows": 2,
+      "error": ""
+    }
+  ]
+}

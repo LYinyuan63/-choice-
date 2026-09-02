@@ -1,71 +1,76 @@
-# Choice财务报表与分红小样本扩展（qianji-data-mini 0.7.0）
+# Choice财务报表与分红正式集成（qianji-data-mini 0.8.1）
 
-本补丁在0.6.0参考数据基础上增加Choice财务报表和分红小样本验证链路。
+本补丁把09号Notebook已经真实验收通过的Choice官方`CTR`调用下沉到插件源码，形成“Choice → 标准事实模型 → SQLite → 审计记录”的正式采集链路。
 
-## 本期边界
+## 已实现范围
 
 - 默认3只证券：`000001.SZ`、`600519.SH`、`300750.SZ`；
 - 默认2个报告期：`2025-12-31`、`2026-06-30`；
-- 覆盖利润表、资产负债表、现金流量表和分红候选指标；
-- 不进行全A股批量下载；
-- 不在未知口径下换算金额和比例。
+- 利润表：`IncomeStatementSHSZ`；
+- 资产负债表：`BalanceStatementSHSZ`；
+- 现金流量表：`CashFlowStatementSHSZ`；
+- 分红实施：`DividendImplementationInfo`，按报告期口径`DateType=3`查询；
+- 单项请求失败只写入错误审计，不丢弃其他证券、报告期和报表的成功结果；
+- 财务请求一旦返回`10001029`，立即熔断剩余财务请求，避免额度耗尽后继续无效调用；
+- 同一参数重复执行时按主键更新，不增加重复事实。
 
-Choice官方说明中，`css`用于基本资料、财务、估值等截面数据；`ReportDate`是季度最后一个自然日，而不是实际公告披露日。指标详情和特有参数仍应以Choice命令生成器为准：
+本期不做全A股财务全量下载，也暂未把财务与分红注册为OpenBB标准财务Fetcher。
 
-- https://quantapi.eastmoney.com/Upload/EMQuantAPI_Python.html
-- https://quantapi.eastmoney.com/Cmd/ChoiceSerialSection?from=web
+## 请求结构
 
-## 指标探测
+默认3只证券、2个报告期会产生21次有界请求：
 
-Notebook先用一个样本证券和最近报告期逐项调用候选指标。成功返回且结构可解析的指标进入正式下载；失败指标保存错误码和错误信息。
+- 三张财务报表：`3证券 × 2报告期 × 3报表 = 18`次；
+- 分红实施：每只证券在完整报告期范围请求1次，共3次。
 
-被拒指标不自动算项目失败，只要每个数据集仍有至少一个有效指标。若某类候选指标全部被拒，需要从Choice命令生成器复制当前账号可用的英文指标简称，填入`.env`：
+所有`CTR`请求都把`Ispandas=1`放在options末尾，并验证返回类型、字段和空表状态。
 
-```text
-CHOICE_INCOME_INDICATORS=...
-CHOICE_BALANCE_INDICATORS=...
-CHOICE_CASHFLOW_INDICATORS=...
-CHOICE_DIVIDEND_INDICATORS=...
-```
+## SQLite表与粒度
 
-## 新增SQLite表
-
-| 表 | 粒度 | 说明 |
+| 表 | 主键粒度 | 说明 |
 |---|---|---|
 | `financial_statement_fact` | 来源+证券+报表类型+报告期+指标 | 三张财务报表长表事实 |
-| `dividend_fact` | 来源+证券+报告期+指标 | 分红方案、金额和日期类长表事实 |
-| `financial_ingestion_run` | 运行ID | 指标探测、下载数量和错误审计 |
+| `dividend_fact` | 来源+证券+报告期+指标 | 分红实施长表事实 |
+| `financial_ingestion_run` | 运行ID | 请求范围、行数和错误审计 |
 
-事实表同时保存`value_numeric`和`value_text`。日期、方案说明等保存在文本字段；能安全转换的数值同时写入数值字段。原始返回保存在`raw_json`。
+事实表同时保存`value_numeric`和`value_text`，原始CTR行保存在`raw_json`。带文字说明且无法安全转为数字的字段只保存文本，空值不写成0。
 
-所有金额、比例和日期类指标在确认具体Choice指标单位前统一标记：
+## 单位口径
 
-```text
-unit=vendor_raw
+- 财务报表字段：`CNY`；
+- 税前/税后每股现金分红：`CNY/share`；
+- 配股基数：`10k_share`；
+- 分红日期字段：`date`；
+- 分红方式：`text`；
+- 送股/转增比例：`vendor_raw_ratio`，保留厂商原始尺度。
+
+## 安装与运行
+
+1. 将补丁内容覆盖到原`qianji_openbb_mini`项目根目录；
+2. 运行`notebooks/00_openBB环境构建.ipynb`；
+3. 确认`qianji-data-mini`版本为`0.8.1`；
+4. 彻底重启Notebook内核；
+5. 运行`notebooks/09_Choice财务报表与分红小样本验收.ipynb`。
+
+也可以在终端运行：
+
+```bash
+qianji-data ingest-choice-financial \
+  --symbols 000001.SZ,600519.SH,300750.SZ \
+  --report-dates 2025-12-31,2026-06-30 \
+  --report-type 1
 ```
 
-这不是正式标准单位，而是防止把“万元”误写为“元”、把百分数误写为小数。
+Windows命令提示符中请写成一行。
 
-## 安装顺序
+## 验收标准
 
-1. 关闭Notebook内核；
-2. 将0.7.0补丁覆盖到原`qianji_openbb_mini`项目根目录；
-3. 运行`notebooks/00_openBB环境构建.ipynb`；
-4. 确认`qianji-data-mini`版本为`0.7.0`；
-5. 彻底重启内核；
-6. 运行`notebooks/09_Choice财务报表与分红小样本验收.ipynb`。
-
-不能只复制09号Notebook，旧版本没有新增事实表和财务编排函数。
-
-## 验收规则
-
-- 每类数据至少一个指标通过探测；
-- 正式请求没有错误；
-- 覆盖全部样本证券、报告期和三张报表；
-- 财务及分红至少存在一个非空值；
+- Choice登录成功；
+- 21次请求均有明确的成功、成功空表或错误记录；
+- 三张报表覆盖全部样本证券和报告期；
 - 事实表无重复主键；
-- 同一参数运行两次，事实表行数不增加；
-- SQLite完整性检查通过；
-- 单位保持`vendor_raw`，等待人工核对。
+- 重复运行后事实表总行数不增加；
+- SQLite `quick_check`为`ok`；
+- 单位、空值和日期格式符合上述口径。
 
-本补丁模拟Choice端到端Notebook验证为20项全部通过；完整自动化测试为31项全部通过。
+用户最新真实验证结果为19项验收门槛全部通过、21次请求全部成功，说明该小样本链路可以进入插件源码阶段。

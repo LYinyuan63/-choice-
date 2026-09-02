@@ -77,7 +77,14 @@ def test_qianji_equity_search_fetcher_reads_configured_database(
 
 def test_provider_registers_equity_search():
     assert provider.name == "qianji"
-    assert set(provider.fetcher_dict) == {"EquityHistorical", "EquitySearch"}
+    assert set(provider.fetcher_dict) == {
+        "EquityHistorical",
+        "EquitySearch",
+        "IncomeStatement",
+        "BalanceSheet",
+        "CashFlowStatement",
+        "HistoricalDividends",
+    }
 
 
 def test_query_is_trimmed():

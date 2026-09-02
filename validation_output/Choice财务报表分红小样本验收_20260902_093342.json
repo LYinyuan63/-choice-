@@ -1,0 +1,463 @@
+{
+  "metadata": {
+    "symbols": [
+      "000001.SZ",
+      "600519.SH",
+      "300750.SZ"
+    ],
+    "report_dates": [
+      "2025-12-31",
+      "2026-06-30"
+    ],
+    "indicator_candidates": {
+      "income": [
+        "TOTALOPERATEREVE",
+        "OPERATEREVE",
+        "OPERATEPROFIT",
+        "TOTALPROFIT",
+        "PARENTNETPROFIT",
+        "NETPROFIT"
+      ],
+      "balance": [
+        "TOTALASSETS",
+        "TOTALLIAB",
+        "PARENTNETASSET",
+        "TOTALEQUITY"
+      ],
+      "cashflow": [
+        "NETCASHOPERATE",
+        "NETCASHINVEST",
+        "NETCASHFINANCE",
+        "CASHNETI"
+      ],
+      "dividend": [
+        "DIVIDENDPLANEXPLAIN",
+        "DIVIDENDPLAN",
+        "CASHDIVIDENDPERSHARE",
+        "RECORDDATE",
+        "EXDIVIDENDDATE",
+        "DIVIDENDPAYDATE"
+      ]
+    },
+    "financial_options_template": "ReportDate={report_date},type=1",
+    "dividend_options_template": "ReportDate={report_date},PayYear={year}",
+    "probe_indicators": true,
+    "run_idempotency_check": true,
+    "database_path": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db",
+    "choice_login_mode": "userInfo",
+    "choice_username_configured": false,
+    "choice_password_configured": false
+  },
+  "first_ingestion": {
+    "source": "choice",
+    "requested_symbols": [
+      "000001.SZ",
+      "600519.SH",
+      "300750.SZ"
+    ],
+    "requested_report_dates": [
+      "2025-12-31",
+      "2026-06-30"
+    ],
+    "selected_indicators": {
+      "income": [],
+      "balance": [],
+      "cashflow": [],
+      "dividend": []
+    },
+    "rejected_indicators": {
+      "income": {
+        "TOTALOPERATEREVE": "ErrorCode=10000013 service error",
+        "OPERATEREVE": "ErrorCode=10000013 service error",
+        "OPERATEPROFIT": "ErrorCode=10000013 service error",
+        "TOTALPROFIT": "ErrorCode=10000013 service error",
+        "PARENTNETPROFIT": "ErrorCode=10000013 service error",
+        "NETPROFIT": "ErrorCode=10000013 service error"
+      },
+      "balance": {
+        "TOTALASSETS": "ErrorCode=10000013 service error",
+        "TOTALLIAB": "ErrorCode=10000013 service error",
+        "PARENTNETASSET": "ErrorCode=10000013 service error",
+        "TOTALEQUITY": "ErrorCode=10000013 service error"
+      },
+      "cashflow": {
+        "NETCASHOPERATE": "ErrorCode=10000013 service error",
+        "NETCASHINVEST": "ErrorCode=10000013 service error",
+        "NETCASHFINANCE": "ErrorCode=10000013 service error",
+        "CASHNETI": "ErrorCode=10000013 service error"
+      },
+      "dividend": {
+        "DIVIDENDPLANEXPLAIN": "ErrorCode=10000013 service error",
+        "DIVIDENDPLAN": "ErrorCode=10000013 service error",
+        "CASHDIVIDENDPERSHARE": "ErrorCode=10000013 service error",
+        "RECORDDATE": "ErrorCode=10000013 service error",
+        "EXDIVIDENDDATE": "ErrorCode=10000013 service error",
+        "DIVIDENDPAYDATE": "ErrorCode=10000013 service error"
+      }
+    },
+    "statement_received_rows": 0,
+    "statement_stored_rows": 0,
+    "dividend_received_rows": 0,
+    "dividend_stored_rows": 0,
+    "errors": {
+      "indicator_probe:income": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:balance": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:cashflow": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:dividend": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    },
+    "started_at": "2026-09-02T01:33:42.442185Z",
+    "finished_at": "2026-09-02T01:34:12.372036Z"
+  },
+  "second_ingestion": {
+    "source": "choice",
+    "requested_symbols": [
+      "000001.SZ",
+      "600519.SH",
+      "300750.SZ"
+    ],
+    "requested_report_dates": [
+      "2025-12-31",
+      "2026-06-30"
+    ],
+    "selected_indicators": {
+      "income": [],
+      "balance": [],
+      "cashflow": [],
+      "dividend": []
+    },
+    "rejected_indicators": {
+      "income": {
+        "TOTALOPERATEREVE": "ErrorCode=10000013 service error",
+        "OPERATEREVE": "ErrorCode=10000013 service error",
+        "OPERATEPROFIT": "ErrorCode=10000013 service error",
+        "TOTALPROFIT": "ErrorCode=10000013 service error",
+        "PARENTNETPROFIT": "ErrorCode=10000013 service error",
+        "NETPROFIT": "ErrorCode=10000013 service error"
+      },
+      "balance": {
+        "TOTALASSETS": "ErrorCode=10000013 service error",
+        "TOTALLIAB": "ErrorCode=10000013 service error",
+        "PARENTNETASSET": "ErrorCode=10000013 service error",
+        "TOTALEQUITY": "ErrorCode=10000013 service error"
+      },
+      "cashflow": {
+        "NETCASHOPERATE": "ErrorCode=10000013 service error",
+        "NETCASHINVEST": "ErrorCode=10000013 service error",
+        "NETCASHFINANCE": "ErrorCode=10000013 service error",
+        "CASHNETI": "ErrorCode=10000013 service error"
+      },
+      "dividend": {
+        "DIVIDENDPLANEXPLAIN": "ErrorCode=10000013 service error",
+        "DIVIDENDPLAN": "ErrorCode=10000013 service error",
+        "CASHDIVIDENDPERSHARE": "ErrorCode=10000013 service error",
+        "RECORDDATE": "ErrorCode=10000013 service error",
+        "EXDIVIDENDDATE": "ErrorCode=10000013 service error",
+        "DIVIDENDPAYDATE": "ErrorCode=10000013 service error"
+      }
+    },
+    "statement_received_rows": 0,
+    "statement_stored_rows": 0,
+    "dividend_received_rows": 0,
+    "dividend_stored_rows": 0,
+    "errors": {
+      "indicator_probe:income": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:balance": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:cashflow": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。",
+      "indicator_probe:dividend": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    },
+    "started_at": "2026-09-02T01:34:12.401241Z",
+    "finished_at": "2026-09-02T01:34:39.073889Z"
+  },
+  "quality_summary": {
+    "passed": 9,
+    "failed": 11
+  },
+  "quality_gates": [
+    {
+      "质量门槛": "数据库路径为项目主库",
+      "通过": true,
+      "证据": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db"
+    },
+    {
+      "质量门槛": "三类财务指标均有通过项",
+      "通过": false,
+      "证据": "{'income': [], 'balance': [], 'cashflow': [], 'dividend': []}"
+    },
+    {
+      "质量门槛": "分红指标有通过项",
+      "通过": false,
+      "证据": "[]"
+    },
+    {
+      "质量门槛": "第一次正式请求无错误",
+      "通过": false,
+      "证据": "{'indicator_probe:income': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:balance': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:cashflow': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:dividend': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。'}"
+    },
+    {
+      "质量门槛": "财务事实行数符合预期",
+      "通过": false,
+      "证据": "actual=0, expected=0"
+    },
+    {
+      "质量门槛": "分红事实行数符合预期",
+      "通过": false,
+      "证据": "actual=0, expected=0"
+    },
+    {
+      "质量门槛": "财务覆盖全部样本证券",
+      "通过": false,
+      "证据": "actual=0, expected=3"
+    },
+    {
+      "质量门槛": "财务覆盖全部报告期",
+      "通过": false,
+      "证据": "actual=0, expected=2"
+    },
+    {
+      "质量门槛": "财务覆盖三张报表",
+      "通过": false,
+      "证据": "[]"
+    },
+    {
+      "质量门槛": "财务事实存在非空值",
+      "通过": false,
+      "证据": "non_null=0"
+    },
+    {
+      "质量门槛": "分红事实存在非空值",
+      "通过": false,
+      "证据": "non_null=0"
+    },
+    {
+      "质量门槛": "财务事实无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "分红事实无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "来源均为Choice",
+      "通过": true,
+      "证据": "source=choice"
+    },
+    {
+      "质量门槛": "单位保持厂商原始尺度",
+      "通过": true,
+      "证据": "unit=vendor_raw"
+    },
+    {
+      "质量门槛": "数值字段无NaN或无穷值",
+      "通过": true,
+      "证据": "numeric_checked=0"
+    },
+    {
+      "质量门槛": "第二次正式请求无错误",
+      "通过": false,
+      "证据": "{'indicator_probe:income': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:balance': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:cashflow': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。', 'indicator_probe:dividend': '候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。'}"
+    },
+    {
+      "质量门槛": "第二次运行核心表不增长",
+      "通过": true,
+      "证据": "[{'stage': '刷新前', 'statement_scope': 0, 'dividend_scope': 0, 'financial_run_log': 0}, {'stage': '第一次刷新后', 'statement_scope': 0, 'dividend_scope': 0, 'financial_run_log': 1}, {'stage': '第二次刷新后', 'statement_scope': 0, 'dividend_scope': 0, 'financial_run_log': 2}]"
+    },
+    {
+      "质量门槛": "两次指标探测结论一致",
+      "通过": true,
+      "证据": "selected indicators一致"
+    },
+    {
+      "质量门槛": "SQLite完整性检查通过",
+      "通过": true,
+      "证据": "ok"
+    }
+  ],
+  "idempotency_counts": [
+    {
+      "stage": "刷新前",
+      "statement_scope": 0,
+      "dividend_scope": 0,
+      "financial_run_log": 0
+    },
+    {
+      "stage": "第一次刷新后",
+      "statement_scope": 0,
+      "dividend_scope": 0,
+      "financial_run_log": 1
+    },
+    {
+      "stage": "第二次刷新后",
+      "statement_scope": 0,
+      "dividend_scope": 0,
+      "financial_run_log": 2
+    }
+  ],
+  "selected_indicators": [],
+  "rejected_indicators": [
+    {
+      "dataset": "income",
+      "indicator": "TOTALOPERATEREVE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "income",
+      "indicator": "OPERATEREVE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "income",
+      "indicator": "OPERATEPROFIT",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "income",
+      "indicator": "TOTALPROFIT",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "income",
+      "indicator": "PARENTNETPROFIT",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "income",
+      "indicator": "NETPROFIT",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "TOTALASSETS",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "TOTALLIAB",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "PARENTNETASSET",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "TOTALEQUITY",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETCASHOPERATE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETCASHINVEST",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETCASHFINANCE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "CASHNETI",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVIDENDPLANEXPLAIN",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVIDENDPLAN",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "CASHDIVIDENDPERSHARE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "RECORDDATE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "EXDIVIDENDDATE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVIDENDPAYDATE",
+      "status": "rejected",
+      "reason": "ErrorCode=10000013 service error"
+    }
+  ],
+  "errors": [
+    {
+      "request": "indicator_probe:income",
+      "error": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    },
+    {
+      "request": "indicator_probe:balance",
+      "error": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    },
+    {
+      "request": "indicator_probe:cashflow",
+      "error": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    },
+    {
+      "request": "indicator_probe:dividend",
+      "error": "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
+    }
+  ],
+  "statement_completeness": [],
+  "dividend_completeness": [],
+  "data_map": [
+    {
+      "dataset": "financial_statement_fact",
+      "grain": "source+symbol+statement_type+report_date+indicator",
+      "purpose": "利润表/资产负债表/现金流量表原始尺度事实",
+      "unit_policy": "vendor_raw，确认后再标准化",
+      "source": "choice"
+    },
+    {
+      "dataset": "dividend_fact",
+      "grain": "source+symbol+report_date+indicator",
+      "purpose": "分红方案与日期类原始事实",
+      "unit_policy": "vendor_raw，空值不填0",
+      "source": "choice"
+    },
+    {
+      "dataset": "financial_ingestion_run",
+      "grain": "run_id",
+      "purpose": "指标探测、下载和错误审计",
+      "unit_policy": "不适用",
+      "source": "choice"
+    }
+  ]
+}
