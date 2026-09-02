@@ -5,6 +5,7 @@ from qianji_data_mini.ingest import ingest_daily
 from qianji_data_mini.reference_ingest import ingest_choice_reference
 from qianji_data_mini.reference_refresh import refresh_choice_reference
 from qianji_data_mini.financial_ingest import ingest_choice_financial_sample
+from qianji_data_mini.models import QuoteSnapshot
 
 __all__ = [
     "Database",
@@ -12,5 +13,6 @@ __all__ = [
     "ingest_choice_reference",
     "refresh_choice_reference",
     "ingest_choice_financial_sample",
+    "QuoteSnapshot",
 ]
-__version__ = "0.9.0"
+__version__ = "0.10.0"

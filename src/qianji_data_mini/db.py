@@ -16,6 +16,7 @@ from qianji_data_mini.models import (
     DailyBar,
     DividendFact,
     FinancialStatementFact,
+    QuoteSnapshot,
     SecurityMaster,
     TradingCalendarDay,
 )
@@ -45,6 +46,39 @@ CREATE TABLE IF NOT EXISTS daily_bar (
 );
 CREATE INDEX IF NOT EXISTS idx_daily_bar_symbol_date
 ON daily_bar(symbol, trade_date);
+
+CREATE TABLE IF NOT EXISTS equity_quote_snapshot (
+    source TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    quote_time TEXT NOT NULL,
+    open REAL,
+    high REAL,
+    low REAL,
+    last_price REAL,
+    previous_close REAL,
+    volume REAL,
+    amount REAL,
+    currency TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    volume_unit TEXT NOT NULL,
+    amount_unit TEXT NOT NULL,
+    fetched_at TEXT NOT NULL,
+    raw_json TEXT,
+    PRIMARY KEY (source, symbol, quote_time)
+);
+CREATE INDEX IF NOT EXISTS idx_equity_quote_snapshot_latest
+ON equity_quote_snapshot(source, symbol, quote_time DESC);
+
+CREATE TABLE IF NOT EXISTS quote_ingestion_run (
+    run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    requested_symbols TEXT NOT NULL,
+    received_rows INTEGER NOT NULL,
+    stored_rows INTEGER NOT NULL,
+    errors TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS ingestion_run (
     run_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -280,6 +314,131 @@ class Database:
         with self.connect() as connection:
             connection.executemany(sql, values)
         return len(values)
+
+    def upsert_quote_snapshots(self, records: Iterable[QuoteSnapshot]) -> int:
+        """Idempotently store quote snapshots at their vendor quote time."""
+        items = list(records)
+        if not items:
+            return 0
+        sql = """
+        INSERT INTO equity_quote_snapshot (
+            source, symbol, quote_time, open, high, low, last_price,
+            previous_close, volume, amount, currency, timezone,
+            volume_unit, amount_unit, fetched_at, raw_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(source, symbol, quote_time) DO UPDATE SET
+            open=excluded.open,
+            high=excluded.high,
+            low=excluded.low,
+            last_price=excluded.last_price,
+            previous_close=excluded.previous_close,
+            volume=excluded.volume,
+            amount=excluded.amount,
+            currency=excluded.currency,
+            timezone=excluded.timezone,
+            volume_unit=excluded.volume_unit,
+            amount_unit=excluded.amount_unit,
+            fetched_at=excluded.fetched_at,
+            raw_json=excluded.raw_json
+        """
+        values = [
+            (
+                item.source.lower(),
+                item.symbol.upper(),
+                item.quote_time.isoformat(),
+                item.open,
+                item.high,
+                item.low,
+                item.last_price,
+                item.previous_close,
+                item.volume,
+                item.amount,
+                item.currency,
+                item.timezone,
+                item.volume_unit,
+                item.amount_unit,
+                item.fetched_at.isoformat(),
+                json.dumps(item.raw, ensure_ascii=False, default=str),
+            )
+            for item in items
+        ]
+        with self.connect() as connection:
+            connection.executemany(sql, values)
+        return len(values)
+
+    def query_quote_snapshots(
+        self,
+        *,
+        symbols: Iterable[str] | None = None,
+        source: str = "choice",
+        latest_only: bool = False,
+    ) -> pd.DataFrame:
+        """Read all or the latest stored quote for each requested symbol."""
+        symbol_list = [str(item).upper() for item in (symbols or [])]
+        filters = "source=?"
+        params: list[str] = [source.lower()]
+        if symbol_list:
+            placeholders = ",".join("?" for _ in symbol_list)
+            filters += f" AND symbol IN ({placeholders})"
+            params.extend(symbol_list)
+        if latest_only:
+            sql = f"""
+            WITH ranked AS (
+                SELECT *, ROW_NUMBER() OVER (
+                    PARTITION BY source, symbol
+                    ORDER BY quote_time DESC, fetched_at DESC
+                ) AS quote_rank
+                FROM equity_quote_snapshot
+                WHERE {filters}
+            )
+            SELECT * FROM ranked WHERE quote_rank=1 ORDER BY symbol
+            """
+        else:
+            sql = f"""
+            SELECT * FROM equity_quote_snapshot
+            WHERE {filters}
+            ORDER BY symbol, quote_time
+            """
+        with self.connect() as connection:
+            frame = pd.read_sql_query(sql, connection, params=params)
+        return frame.drop(columns=["raw_json", "quote_rank"], errors="ignore")
+
+    def log_quote_ingestion(
+        self,
+        *,
+        source: str,
+        requested_symbols: list[str],
+        received_rows: int,
+        stored_rows: int,
+        errors: dict[str, str],
+        started_at: str,
+        finished_at: str,
+    ) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO quote_ingestion_run (
+                    source, requested_symbols, received_rows, stored_rows,
+                    errors, started_at, finished_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source.lower(),
+                    json.dumps(requested_symbols, ensure_ascii=False),
+                    received_rows,
+                    stored_rows,
+                    json.dumps(errors, ensure_ascii=False),
+                    started_at,
+                    finished_at,
+                ),
+            )
+
+    def query_quote_ingestion_runs(self) -> pd.DataFrame:
+        with self.connect() as connection:
+            return pd.read_sql_query(
+                "SELECT * FROM quote_ingestion_run ORDER BY run_id",
+                connection,
+            )
 
     def upsert_security_master(self, records: Iterable[SecurityMaster]) -> int:
         items = list(records)

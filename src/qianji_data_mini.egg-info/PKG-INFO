@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: qianji-data-mini
-Version: 0.9.0
+Version: 0.10.0
 Summary: Lightweight four-source financial data ingestion, SQLite storage, REST service and OpenBB provider.
 Requires-Python: <3.14,>=3.10
 Description-Content-Type: text/markdown
@@ -26,8 +26,8 @@ Requires-Dist: httpx2<3,>=2.12; extra == "dev"
 `真实数据自动验证说明.md`，然后运行 `运行真实数据验证.bat`。
 
 按照 `openbb-tushare` 和 `openbb-akshare` 的 Provider/Fetcher 结构开发的
-独立 Choice OpenBB 扩展位于 `extensions/openbb_choice`。该扩展目前只注册
-已经实现的 `EquityHistorical`，不会把未完成接口标记为可用。
+独立 Choice OpenBB 扩展位于 `extensions/openbb_choice`。该扩展目前注册
+已经完成验收的 `EquityHistorical` 和一次性 `EquityQuote` 快照接口。
 
 这是一个适合在 Windows + VS Code/Jupyter 上先跑通的小型项目，完成以下闭环：
 
@@ -38,9 +38,10 @@ Requires-Dist: httpx2<3,>=2.12; extra == "dev"
 5. 保存Choice证券主数据和沪深交易日历；
 6. 通过Choice官方`CTR`报表下载三张财务报表和分红实施数据并幂等落库；
 7. 通过OpenBB `provider="qianji"`从SQLite查询利润表、资产负债表、现金流量表和历史现金分红；
-8. 在没有商业接口权限时，用 `mock` 模拟源完整验收流程。
+8. 通过Choice一次性实时快照、SQLite独立快照表和OpenBB双Provider查询实时行情；
+9. 在没有商业接口权限时，用 `mock` 模拟源完整验收流程。
 
-> 行情范围仍是“选定证券 + 指定日期范围的日线”；Choice已增加证券主数据、交易日历、财务报表和分红事实落地。财务与现金分红已经注册为OpenBB标准Fetcher，查询只读SQLite。项目仍不包含新闻、研报和实时推送。
+> Choice实时行情采用一次性`csqsnapshot`，不是持续订阅推送；快照会进入独立SQLite表。项目仍不包含新闻、研报和持续实时推送。
 
 ## 最简单的运行方法
 
@@ -58,6 +59,7 @@ Choice专项Notebook按顺序使用：
 8. `08_Choice长期交易日历与主数据增量刷新验收.ipynb`：建立可配置长期沪深日历、全A成员快照与新增/退出板块/字段变更记录，并验证同一快照重复刷新不产生重复数据。
 9. `09_Choice财务报表与分红小样本验收.ipynb`：对3只证券、2个报告期调用Choice官方`CTR`报表，保存三张财务报表和分红实施事实，并验证重复运行幂等。
 10. `10_Choice财务分红_OpenBB查询验收.ipynb`：不登录Choice，从SQLite经`provider="qianji"`查询三张财务报表和历史现金分红，并逐项与公司库核对。
+11. `11_Choice实时行情与OpenBB查询验收.ipynb`：一次调用Choice三证券实时快照，写入SQLite，并核对`choice`直连与`qianji`公司库查询结果。
 
 ## 四个真实数据源的前置条件
 
@@ -130,6 +132,18 @@ dividends = obb.equity.fundamental.dividends(
 )
 ```
 
+实时快照可直接调用Choice，也可在落库后从公司库读取：
+
+```python
+direct_quote = obb.equity.price.quote(
+    symbol="000001.SZ,600519.SH", provider="choice", use_cache=False,
+)
+stored_quote = obb.equity.price.quote(
+    symbol="000001.SZ,600519.SH", provider="qianji",
+    source="choice", use_cache=False,
+)
+```
+
 证券主数据落库后，可以通过公司库Provider查询：
 
 ```python
@@ -152,6 +166,7 @@ OpenBB 在这里是统一消费和路由层，SQLite 才是这个小型版本的
 - `src/qianji_data_mini/financial_ingest.py`：Choice官方`CTR`财务报表与分红小样本落库编排；
 - `src/qianji_data_mini/openbb_provider/financial_statements.py`：SQLite三张财务报表OpenBB Fetcher；
 - `src/qianji_data_mini/openbb_provider/dividends.py`：SQLite历史现金分红OpenBB Fetcher；
+- `src/qianji_data_mini/openbb_provider/equity_quote.py`：SQLite最新实时快照OpenBB Fetcher；
 - `src/qianji_data_mini/service.py`：本地 REST 服务；
 - `src/qianji_data_mini/openbb_provider/`：OpenBB 私有 Provider；
 - `clients/`：Python、REST、Excel、OpenBB 四种调用示例；
@@ -167,6 +182,7 @@ OpenBB 在这里是统一消费和路由层，SQLite 才是这个小型版本的
 - Choice三张官方财务报表按接口说明保存为`unit=CNY`；分红按字段分别保存为`CNY/share`、`10k_share`、`date`、`text`或`vendor_raw_ratio`，空值不填0；
 - 税后每股现金分红字段可能返回带说明的文本，插件会保留`value_text`，不会强行转换为数值；
 - OpenBB `HistoricalDividends`只返回具备除权日和税前每股现金分红的现金事件；送股、转增等原始事实仍保留在SQLite长表中；
+- Choice实时行情使用一次性`csqsnapshot`，不是长连接订阅；停牌、休市和账号无快照权限应保留为明确错误或空值，不伪造实时价格；
 - 本项目把 Tushare 日线 `vol` 从“手”乘以 100 转为“股”，把 `amount` 从“千元”乘以 1000 转为“元”；
 - 其他三源的量额倍率可在 `.env` 调整，首次接入必须抽样核对；
 - 默认 REST 只监听 `127.0.0.1`；没有设置 API Key 时不要直接暴露到公网。

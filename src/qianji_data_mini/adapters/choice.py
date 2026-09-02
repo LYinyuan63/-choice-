@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 import re
 from bisect import bisect_left, bisect_right
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Iterable
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -16,6 +17,7 @@ from qianji_data_mini.models import (
     DailyBar,
     DividendFact,
     FinancialStatementFact,
+    QuoteSnapshot,
     SecurityMaster,
     TradingCalendarDay,
 )
@@ -151,6 +153,9 @@ class ChoiceDataLimitError(AdapterError):
 class ChoiceAdapter(DailyBarAdapter):
     source = "choice"
     indicators = ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "AMOUNT", "PRECLOSE", "PCTCHANGE"]
+    quote_indicators = [
+        "TIME", "PRECLOSE", "OPEN", "HIGH", "LOW", "NOW", "VOLUME", "AMOUNT"
+    ]
 
     @staticmethod
     def _login_options() -> str:
@@ -257,6 +262,126 @@ class ChoiceAdapter(DailyBarAdapter):
                 )
             )
         return rows
+
+    @staticmethod
+    def _quote_time(value: object, received_at: datetime) -> datetime:
+        """Normalize Choice snapshot timestamps to Asia/Shanghai."""
+        market_tz = ZoneInfo("Asia/Shanghai")
+        if isinstance(value, datetime):
+            return value.replace(tzinfo=market_tz) if value.tzinfo is None else value.astimezone(market_tz)
+        if isinstance(value, time):
+            return datetime.combine(received_at.astimezone(market_tz).date(), value, market_tz)
+
+        text = str(value or "").strip()
+        patterns = (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%Y/%m/%d %H:%M",
+            "%H:%M:%S",
+            "%H:%M",
+            "%H%M%S",
+        )
+        for pattern in patterns:
+            try:
+                parsed = datetime.strptime(text, pattern)
+            except ValueError:
+                continue
+            if pattern.startswith("%H"):
+                parsed = datetime.combine(
+                    received_at.astimezone(market_tz).date(), parsed.time()
+                )
+            return parsed.replace(tzinfo=market_tz)
+        return received_at.astimezone(market_tz)
+
+    def fetch_quote_snapshots(
+        self,
+        *,
+        symbols: Iterable[str],
+    ) -> list[QuoteSnapshot]:
+        """Fetch one non-streaming Choice quote snapshot for multiple symbols."""
+        symbol_list = list(
+            dict.fromkeys(
+                str(item).strip().upper() for item in symbols if str(item).strip()
+            )
+        )
+        if not symbol_list:
+            raise ValueError("实时行情至少需要一个证券代码。")
+        options = os.getenv("CHOICE_CSQSNAPSHOT_OPTIONS", "Ispandas=0").strip()
+        response = self.c.csqsnapshot(
+            ",".join(symbol_list),
+            ",".join(self.quote_indicators),
+            options,
+        )
+        error_code = getattr(response, "ErrorCode", -1)
+        if error_code != 0:
+            error_message = getattr(response, "ErrorMsg", "未返回错误说明")
+            if str(error_code) == "10001029" or "data limit exceeded" in str(
+                error_message
+            ).lower():
+                raise ChoiceDataLimitError(
+                    "Choice实时行情额度已达到上限（10001029: data limit exceeded）。"
+                )
+            raise AdapterError(
+                f"Choice csqsnapshot 返回错误（{error_code}）：{error_message}"
+            )
+
+        indicators = [
+            str(item).upper()
+            for item in (
+                getattr(response, "Indicators", []) or self.quote_indicators
+            )
+        ]
+        payload = getattr(response, "Data", {})
+        if not isinstance(payload, dict):
+            raise AdapterError("Choice csqsnapshot 返回的Data不是按证券代码组织的字典。")
+
+        received_at = datetime.now(timezone.utc)
+        volume_multiplier = env_float("CHOICE_VOLUME_MULTIPLIER", 1)
+        amount_multiplier = env_float("CHOICE_AMOUNT_MULTIPLIER", 1)
+        records: list[QuoteSnapshot] = []
+        for symbol in symbol_list:
+            values = payload.get(symbol)
+            if values is None:
+                values = payload.get(symbol.upper())
+            if values is None:
+                raise AdapterError(f"Choice csqsnapshot 未返回 {symbol}。")
+            if isinstance(values, (list, tuple)) and len(values) == 1 and isinstance(
+                values[0], (list, tuple)
+            ):
+                values = values[0]
+            values = list(values) if isinstance(values, (list, tuple)) else [values]
+            if len(values) != len(indicators):
+                raise AdapterError(
+                    f"Choice csqsnapshot 字段数不匹配：{symbol}，"
+                    f"Indicators={len(indicators)}，Values={len(values)}。"
+                )
+            raw = dict(zip(indicators, values))
+            quote_time = self._quote_time(raw.get("TIME"), received_at)
+            records.append(
+                QuoteSnapshot(
+                    symbol=symbol,
+                    quote_time=quote_time,
+                    open=_fact_value(raw.get("OPEN"))[0],
+                    high=_fact_value(raw.get("HIGH"))[0],
+                    low=_fact_value(raw.get("LOW"))[0],
+                    last_price=_fact_value(raw.get("NOW"))[0],
+                    previous_close=_fact_value(raw.get("PRECLOSE"))[0],
+                    volume=(
+                        _fact_value(raw.get("VOLUME"))[0] * volume_multiplier
+                        if _fact_value(raw.get("VOLUME"))[0] is not None
+                        else None
+                    ),
+                    amount=(
+                        _fact_value(raw.get("AMOUNT"))[0] * amount_multiplier
+                        if _fact_value(raw.get("AMOUNT"))[0] is not None
+                        else None
+                    ),
+                    raw=raw,
+                    fetched_at=received_at,
+                )
+            )
+        return records
 
     @staticmethod
     def _parse_css_response(response: Any, symbols: list[str]) -> list[tuple[str, dict[str, Any]]]:

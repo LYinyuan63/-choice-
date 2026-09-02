@@ -59,6 +59,71 @@ class IngestResult(BaseModel):
     finished_at: datetime
 
 
+class QuoteSnapshot(BaseModel):
+    """One normalized intraday quote snapshot received from a vendor."""
+
+    model_config = ConfigDict(extra="allow")
+
+    symbol: str
+    quote_time: datetime
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    last_price: float | None = None
+    previous_close: float | None = None
+    volume: float | None = None
+    amount: float | None = None
+    source: str = "choice"
+    currency: str = "CNY"
+    timezone: str = "Asia/Shanghai"
+    volume_unit: str = "share"
+    amount_unit: str = "CNY"
+    raw: dict[str, Any] = Field(default_factory=dict, exclude=True)
+    fetched_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    @model_validator(mode="after")
+    def validate_snapshot(self):
+        for field_name in ("open", "high", "low", "last_price"):
+            value = getattr(self, field_name)
+            if value is not None and value < 0:
+                raise ValueError(f"{field_name} cannot be negative")
+        if self.volume is not None and self.volume < 0:
+            raise ValueError("volume cannot be negative")
+        if self.amount is not None and self.amount < 0:
+            raise ValueError("amount cannot be negative")
+        comparable = [
+            value
+            for value in (self.open, self.low, self.last_price)
+            if value is not None and value > 0
+        ]
+        if self.high is not None and self.high > 0 and comparable:
+            if self.high < max(comparable):
+                raise ValueError("high is lower than another positive quote value")
+        comparable = [
+            value
+            for value in (self.open, self.high, self.last_price)
+            if value is not None and value > 0
+        ]
+        if self.low is not None and self.low > 0 and comparable:
+            if self.low > min(comparable):
+                raise ValueError("low is higher than another positive quote value")
+        return self
+
+
+class QuoteIngestResult(BaseModel):
+    """Result of one bounded Choice quote-snapshot ingestion."""
+
+    source: str = "choice"
+    requested_symbols: list[str]
+    received_rows: int = 0
+    stored_rows: int = 0
+    errors: dict[str, str] = Field(default_factory=dict)
+    started_at: datetime
+    finished_at: datetime
+
+
 class SecurityMaster(BaseModel):
     """One normalized security identity record."""
 

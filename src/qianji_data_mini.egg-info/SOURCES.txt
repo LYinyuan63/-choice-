@@ -28,10 +28,12 @@ src/qianji_data_mini/adapters/wind.py
 src/qianji_data_mini/openbb_provider/__init__.py
 src/qianji_data_mini/openbb_provider/dividends.py
 src/qianji_data_mini/openbb_provider/equity_historical.py
+src/qianji_data_mini/openbb_provider/equity_quote.py
 src/qianji_data_mini/openbb_provider/equity_search.py
 src/qianji_data_mini/openbb_provider/financial_statements.py
 src/qianji_data_mini/openbb_provider/provider.py
 tests/test_e2e.py
+tests/test_equity_quote.py
 tests/test_equity_search.py
 tests/test_financial_ingest.py
 tests/test_financial_openbb_provider.py

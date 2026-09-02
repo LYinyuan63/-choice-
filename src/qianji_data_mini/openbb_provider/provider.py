@@ -6,6 +6,7 @@ from qianji_data_mini.openbb_provider.equity_historical import (
     QianjiEquityHistoricalFetcher,
 )
 from qianji_data_mini.openbb_provider.equity_search import QianjiEquitySearchFetcher
+from qianji_data_mini.openbb_provider.equity_quote import QianjiEquityQuoteFetcher
 from qianji_data_mini.openbb_provider.dividends import (
     QianjiHistoricalDividendsFetcher,
 )
@@ -23,6 +24,7 @@ provider = Provider(
     fetcher_dict={
         "EquityHistorical": QianjiEquityHistoricalFetcher,
         "EquitySearch": QianjiEquitySearchFetcher,
+        "EquityQuote": QianjiEquityQuoteFetcher,
         "IncomeStatement": QianjiIncomeStatementFetcher,
         "BalanceSheet": QianjiBalanceSheetFetcher,
         "CashFlowStatement": QianjiCashFlowStatementFetcher,

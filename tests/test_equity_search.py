@@ -80,6 +80,7 @@ def test_provider_registers_equity_search():
     assert set(provider.fetcher_dict) == {
         "EquityHistorical",
         "EquitySearch",
+        "EquityQuote",
         "IncomeStatement",
         "BalanceSheet",
         "CashFlowStatement",

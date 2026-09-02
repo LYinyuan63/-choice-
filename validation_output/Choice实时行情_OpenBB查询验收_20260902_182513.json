@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-09-02T10:25:13.827202+00:00",
+  "database": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db",
+  "qianji_version": "0.10.0",
+  "choice_version": "0.2.0",
+  "choice_snapshot_calls": 1,
+  "quality_gates": [
+    {
+      "check": "插件版本达到0.10.0/0.2.0",
+      "status": "PASS",
+      "evidence": "0.10.0/0.2.0"
+    },
+    {
+      "check": "SQLite完整性",
+      "status": "PASS",
+      "evidence": "ok"
+    },
+    {
+      "check": "Choice与qianji实时行情路由已注册",
+      "status": "PASS",
+      "evidence": ".equity.price.quote"
+    },
+    {
+      "check": "Choice一次快照调用无错误",
+      "status": "FAIL",
+      "evidence": "OpenBBError: \n[Error] -> Choice csqsnapshot failed (ErrorCode=10001012): insufficient user access"
+    },
+    {
+      "check": "Choice返回全部样本证券",
+      "status": "FAIL",
+      "evidence": "[]"
+    },
+    {
+      "check": "Choice结果Provider正确",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "check": "行情时间存在",
+      "status": "FAIL",
+      "evidence": "[]"
+    },
+    {
+      "check": "价格区间基本有效",
+      "status": "FAIL",
+      "evidence": "rows=0"
+    },
+    {
+      "check": "成交量与成交额单位明确",
+      "status": "FAIL",
+      "evidence": "share/CNY"
+    },
+    {
+      "check": "快照成功落库",
+      "status": "FAIL",
+      "evidence": "0"
+    },
+    {
+      "check": "重复写入不增加行数",
+      "status": "PASS",
+      "evidence": "0->0"
+    },
+    {
+      "check": "qianji返回全部样本证券",
+      "status": "FAIL",
+      "evidence": "[]"
+    },
+    {
+      "check": "qianji结果Provider正确",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "check": "Choice-SQLite-qianji数值一致",
+      "status": "PASS",
+      "evidence": "rows=21"
+    },
+    {
+      "check": "本次新增一条采集审计记录",
+      "status": "PASS",
+      "evidence": "1->2"
+    }
+  ],
+  "errors": {
+    "choice": "OpenBBError: \n[Error] -> Choice csqsnapshot failed (ErrorCode=10001012): insufficient user access",
+    "qianji": ""
+  }
+}
