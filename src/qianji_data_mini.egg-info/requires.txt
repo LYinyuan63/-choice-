@@ -1,0 +1,17 @@
+fastapi<1,>=0.115
+httpx<1,>=0.27
+openpyxl<4,>=3.1
+pandas<3,>=2.0
+pydantic<3,>=2.7
+python-dotenv<2,>=1.0
+requests<3,>=2.31
+tushare<2,>=1.4
+uvicorn<1,>=0.30
+
+[dev]
+pytest<9,>=8
+httpx2<3,>=2.12
+
+[openbb]
+openbb<5,>=4.7
+openbb-core<2,>=1.5
