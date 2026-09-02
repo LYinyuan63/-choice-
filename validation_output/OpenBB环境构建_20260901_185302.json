@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-09-01T18:53:02.439783+08:00",
+  "python": "d:\\minicoda3\\envs\\dm311\\python.exe",
+  "python_version": "3.11.14",
+  "project_root": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini",
+  "install_mode": "full",
+  "declared_versions": {
+    "qianji-data-mini": "0.5.0",
+    "openbb-choice": "0.1.2"
+  },
+  "verification": {
+    "python": "d:\\minicoda3\\envs\\dm311\\python.exe",
+    "python_version": "3.11.14",
+    "qianji_data_mini_version": "0.5.0",
+    "openbb_choice_version": "0.1.2",
+    "emquant_importable": true,
+    "providers": [
+      "benzinga",
+      "bls",
+      "cftc",
+      "choice",
+      "congress_gov",
+      "econdb",
+      "eia",
+      "federal_reserve",
+      "fmp",
+      "fred",
+      "government_us",
+      "imf",
+      "intrinio",
+      "oecd",
+      "qianji",
+      "sec",
+      "tiingo",
+      "tradingeconomics",
+      "yfinance"
+    ]
+  },
+  "checks": {
+    "使用当前Notebook Python": true,
+    "qianji版本与项目一致": true,
+    "choice版本与项目一致": true,
+    "发现qianji Provider": true,
+    "发现choice Provider": true,
+    "EmQuantAPI可以导入": true
+  },
+  "commands": [
+    {
+      "label": "检查pip",
+      "returncode": 0,
+      "success": true
+    },
+    {
+      "label": "安装qianji-data-mini",
+      "returncode": 0,
+      "success": true
+    },
+    {
+      "label": "安装openbb-choice",
+      "returncode": 0,
+      "success": true
+    },
+    {
+      "label": "执行openbb.build()",
+      "returncode": 0,
+      "success": true
+    },
+    {
+      "label": "独立进程环境验收",
+      "returncode": 0,
+      "success": true
+    }
+  ],
+  "credentials_included": false
+}

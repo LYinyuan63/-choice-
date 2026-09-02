@@ -1,0 +1,754 @@
+{
+  "metadata": {
+    "notebook_version": "0.7.1-ctr",
+    "symbols": [
+      "000001.SZ",
+      "600519.SH",
+      "300750.SZ"
+    ],
+    "report_dates": [
+      "2025-12-31",
+      "2026-06-30"
+    ],
+    "report_type": 1,
+    "report_specs": {
+      "income": {
+        "ctr_name": "IncomeStatementSHSZ",
+        "indicators": [
+          "OPERATEREVE",
+          "NETPROFIT",
+          "PARENTNETPROFIT"
+        ]
+      },
+      "balance": {
+        "ctr_name": "BalanceStatementSHSZ",
+        "indicators": [
+          "SUMASSET",
+          "SUMLIAB",
+          "SUMSHEQUITY"
+        ]
+      },
+      "cashflow": {
+        "ctr_name": "CashFlowStatementSHSZ",
+        "indicators": [
+          "NETOPERATECASHFLOW",
+          "NETINVCASHFLOW",
+          "NETFINACASHFLOW",
+          "NICASHEQUI"
+        ]
+      }
+    },
+    "dividend_spec": {
+      "ctr_name": "DividendImplementationInfo",
+      "indicators": [
+        "DIVWAY",
+        "DIVCASHPSBFTAX",
+        "DIVCASHPSAFTAX",
+        "DIVSTOCKPSRATIO",
+        "DIVCAPITPSRATIO",
+        "DIVRTISSBASESHARES",
+        "SHAREBASEDATE",
+        "DIVIMPLANNCDATE",
+        "DIVRECORDDATE",
+        "DIVEXDATE",
+        "DIVPAYDATE"
+      ]
+    },
+    "idempotency_mode": "local_upsert_only",
+    "database_path": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db",
+    "choice_login_mode": "userInfo",
+    "choice_username_configured": false,
+    "choice_password_configured": false
+  },
+  "ingestion": {
+    "source": "choice",
+    "requested_symbols": [
+      "000001.SZ",
+      "600519.SH",
+      "300750.SZ"
+    ],
+    "requested_report_dates": [
+      "2025-12-31",
+      "2026-06-30"
+    ],
+    "selected_indicators": {
+      "income": [
+        "NETPROFIT",
+        "OPERATEREVE",
+        "PARENTNETPROFIT"
+      ],
+      "balance": [
+        "SUMASSET",
+        "SUMLIAB",
+        "SUMSHEQUITY"
+      ],
+      "cashflow": [
+        "NETFINACASHFLOW",
+        "NETINVCASHFLOW",
+        "NETOPERATECASHFLOW",
+        "NICASHEQUI"
+      ],
+      "dividend": [
+        "DIVCAPITPSRATIO",
+        "DIVCASHPSAFTAX",
+        "DIVCASHPSBFTAX",
+        "DIVEXDATE",
+        "DIVIMPLANNCDATE",
+        "DIVPAYDATE",
+        "DIVRECORDDATE",
+        "DIVRTISSBASESHARES",
+        "DIVSTOCKPSRATIO",
+        "DIVWAY",
+        "SHAREBASEDATE"
+      ]
+    },
+    "rejected_indicators": {
+      "income": {},
+      "balance": {},
+      "cashflow": {},
+      "dividend": {}
+    },
+    "statement_received_rows": 60,
+    "statement_stored_rows": 60,
+    "dividend_received_rows": 44,
+    "dividend_stored_rows": 44,
+    "errors": {},
+    "started_at": "2026-09-02T05:24:41.005417+00:00",
+    "finished_at": "2026-09-02T05:25:25.944192+00:00"
+  },
+  "quality_summary": {
+    "passed": 19,
+    "failed": 0
+  },
+  "quality_gates": [
+    {
+      "质量门槛": "数据库路径为项目主库",
+      "通过": true,
+      "证据": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\data\\qianji_market.db"
+    },
+    {
+      "质量门槛": "财务CTR请求数完整",
+      "通过": true,
+      "证据": "actual=18, expected=18"
+    },
+    {
+      "质量门槛": "分红CTR请求数完整",
+      "通过": true,
+      "证据": "actual=3, expected=3"
+    },
+    {
+      "质量门槛": "所有CTR请求未返回错误",
+      "通过": true,
+      "证据": "errors={}"
+    },
+    {
+      "质量门槛": "三类财务字段全部返回",
+      "通过": true,
+      "证据": "{'income': ['NETPROFIT', 'OPERATEREVE', 'PARENTNETPROFIT'], 'balance': ['SUMASSET', 'SUMLIAB', 'SUMSHEQUITY'], 'cashflow': ['NETFINACASHFLOW', 'NETINVCASHFLOW', 'NETOPERATECASHFLOW', 'NICASHEQUI'], 'dividend': ['DIVCAPITPSRATIO', 'DIVCASHPSAFTAX', 'DIVCASHPSBFTAX', 'DIVEXDATE', 'DIVIMPLANNCDATE', 'DIVPAYDATE', 'DIVRECORDDATE', 'DIVRTISSBASESHARES', 'DIVSTOCKPSRATIO', 'DIVWAY', 'SHAREBASEDATE']}"
+    },
+    {
+      "质量门槛": "财务事实行数符合预期",
+      "通过": true,
+      "证据": "actual=60, expected=60"
+    },
+    {
+      "质量门槛": "财务覆盖全部样本证券",
+      "通过": true,
+      "证据": "actual=3, expected=3"
+    },
+    {
+      "质量门槛": "财务覆盖全部报告期",
+      "通过": true,
+      "证据": "actual=2, expected=2"
+    },
+    {
+      "质量门槛": "财务覆盖三张报表",
+      "通过": true,
+      "证据": "['balance', 'cashflow', 'income']"
+    },
+    {
+      "质量门槛": "每类财务报表均存在非空值",
+      "通过": true,
+      "证据": "[{'statement_type': 'balance', 'indicator': 'SUMASSET', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'balance', 'indicator': 'SUMLIAB', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'balance', 'indicator': 'SUMSHEQUITY', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'cashflow', 'indicator': 'NETFINACASHFLOW', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'cashflow', 'indicator': 'NETINVCASHFLOW', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'cashflow', 'indicator': 'NETOPERATECASHFLOW', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'cashflow', 'indicator': 'NICASHEQUI', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'income', 'indicator': 'NETPROFIT', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'income', 'indicator': 'OPERATEREVE', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}, {'statement_type': 'income', 'indicator': 'PARENTNETPROFIT', 'rows': 6, 'symbols': 3, 'report_dates': 2, 'non_null': 6}]"
+    },
+    {
+      "质量门槛": "分红专题报表调用成功",
+      "通过": true,
+      "证据": "[{'request': 'dividend:000001.SZ:2025-12-31:2026-06-30', 'status': 'success', 'rows': 1}, {'request': 'dividend:600519.SH:2025-12-31:2026-06-30', 'status': 'success', 'rows': 1}, {'request': 'dividend:300750.SZ:2025-12-31:2026-06-30', 'status': 'success', 'rows': 2}]"
+    },
+    {
+      "质量门槛": "样本范围存在分红事件",
+      "通过": true,
+      "证据": "rows=44, non_null=36"
+    },
+    {
+      "质量门槛": "财务事实无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "分红事实无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "来源均为Choice",
+      "通过": true,
+      "证据": "source=choice"
+    },
+    {
+      "质量门槛": "财务单位为官方元口径",
+      "通过": true,
+      "证据": "['CNY']"
+    },
+    {
+      "质量门槛": "数值字段无NaN或无穷值",
+      "通过": true,
+      "证据": "numeric_checked=68"
+    },
+    {
+      "质量门槛": "第二次本地upsert核心表不增长",
+      "通过": true,
+      "证据": "[{'stage': '刷新前', 'statement_scope': 60, 'dividend_scope': 44, 'financial_run_log': 3}, {'stage': '第一次落库后', 'statement_scope': 60, 'dividend_scope': 44, 'financial_run_log': 3}, {'stage': '第二次本地upsert后', 'statement_scope': 60, 'dividend_scope': 44, 'financial_run_log': 3}]"
+    },
+    {
+      "质量门槛": "SQLite完整性检查通过",
+      "通过": true,
+      "证据": "ok"
+    }
+  ],
+  "idempotency_counts": [
+    {
+      "stage": "刷新前",
+      "statement_scope": 60,
+      "dividend_scope": 44,
+      "financial_run_log": 3
+    },
+    {
+      "stage": "第一次落库后",
+      "statement_scope": 60,
+      "dividend_scope": 44,
+      "financial_run_log": 3
+    },
+    {
+      "stage": "第二次本地upsert后",
+      "statement_scope": 60,
+      "dividend_scope": 44,
+      "financial_run_log": 3
+    }
+  ],
+  "official_mapping": [
+    {
+      "dataset": "income",
+      "function": "ctr",
+      "ctr_name": "IncomeStatementSHSZ",
+      "parameters": "SecuCode,ReportDate,ReportType",
+      "indicators": "OPERATEREVE,NETPROFIT,PARENTNETPROFIT"
+    },
+    {
+      "dataset": "balance",
+      "function": "ctr",
+      "ctr_name": "BalanceStatementSHSZ",
+      "parameters": "SecuCode,ReportDate,ReportType",
+      "indicators": "SUMASSET,SUMLIAB,SUMSHEQUITY"
+    },
+    {
+      "dataset": "cashflow",
+      "function": "ctr",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "parameters": "SecuCode,ReportDate,ReportType",
+      "indicators": "NETOPERATECASHFLOW,NETINVCASHFLOW,NETFINACASHFLOW,NICASHEQUI"
+    },
+    {
+      "dataset": "dividend",
+      "function": "ctr",
+      "ctr_name": "DividendImplementationInfo",
+      "parameters": "secucode,StartDate,EndDate,DateType=3",
+      "indicators": "DIVWAY,DIVCASHPSBFTAX,DIVCASHPSAFTAX,DIVSTOCKPSRATIO,DIVCAPITPSRATIO,DIVRTISSBASESHARES,SHAREBASEDATE,DIVIMPLANNCDATE,DIVRECORDDATE,DIVEXDATE,DIVPAYDATE"
+    }
+  ],
+  "request_audit": [
+    {
+      "request": "income:000001.SZ:2025-12-31",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:000001.SZ:2025-12-31",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:000001.SZ:2025-12-31",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "income:000001.SZ:2026-06-30",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:000001.SZ:2026-06-30",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:000001.SZ:2026-06-30",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=000001.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "dividend:000001.SZ:2025-12-31:2026-06-30",
+      "ctr_name": "DividendImplementationInfo",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "secucode=000001.SZ,StartDate=2025-12-31,EndDate=2026-06-30,DateType=3,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "income:600519.SH:2025-12-31",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:600519.SH:2025-12-31",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:600519.SH:2025-12-31",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "income:600519.SH:2026-06-30",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:600519.SH:2026-06-30",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:600519.SH:2026-06-30",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=600519.SH,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "dividend:600519.SH:2025-12-31:2026-06-30",
+      "ctr_name": "DividendImplementationInfo",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "secucode=600519.SH,StartDate=2025-12-31,EndDate=2026-06-30,DateType=3,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "income:300750.SZ:2025-12-31",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:300750.SZ:2025-12-31",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:300750.SZ:2025-12-31",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2025-12-31,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "income:300750.SZ:2026-06-30",
+      "ctr_name": "IncomeStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "balance:300750.SZ:2026-06-30",
+      "ctr_name": "BalanceStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "cashflow:300750.SZ:2026-06-30",
+      "ctr_name": "CashFlowStatementSHSZ",
+      "status": "success",
+      "rows": 1,
+      "error_code": 0,
+      "error": "",
+      "options": "SecuCode=300750.SZ,ReportDate=2026-06-30,ReportType=1,RECVtimeout=60,Ispandas=1"
+    },
+    {
+      "request": "dividend:300750.SZ:2025-12-31:2026-06-30",
+      "ctr_name": "DividendImplementationInfo",
+      "status": "success",
+      "rows": 2,
+      "error_code": 0,
+      "error": "",
+      "options": "secucode=300750.SZ,StartDate=2025-12-31,EndDate=2026-06-30,DateType=3,RECVtimeout=60,Ispandas=1"
+    }
+  ],
+  "selected_indicators": [
+    {
+      "dataset": "income",
+      "indicator": "NETPROFIT",
+      "status": "selected"
+    },
+    {
+      "dataset": "income",
+      "indicator": "OPERATEREVE",
+      "status": "selected"
+    },
+    {
+      "dataset": "income",
+      "indicator": "PARENTNETPROFIT",
+      "status": "selected"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "SUMASSET",
+      "status": "selected"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "SUMLIAB",
+      "status": "selected"
+    },
+    {
+      "dataset": "balance",
+      "indicator": "SUMSHEQUITY",
+      "status": "selected"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETFINACASHFLOW",
+      "status": "selected"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETINVCASHFLOW",
+      "status": "selected"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NETOPERATECASHFLOW",
+      "status": "selected"
+    },
+    {
+      "dataset": "cashflow",
+      "indicator": "NICASHEQUI",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVCAPITPSRATIO",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVCASHPSAFTAX",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVCASHPSBFTAX",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVEXDATE",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVIMPLANNCDATE",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVPAYDATE",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVRECORDDATE",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVRTISSBASESHARES",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVSTOCKPSRATIO",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "DIVWAY",
+      "status": "selected"
+    },
+    {
+      "dataset": "dividend",
+      "indicator": "SHAREBASEDATE",
+      "status": "selected"
+    }
+  ],
+  "missing_fields": [],
+  "errors": [],
+  "statement_completeness": [
+    {
+      "statement_type": "balance",
+      "indicator": "SUMASSET",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "balance",
+      "indicator": "SUMLIAB",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "balance",
+      "indicator": "SUMSHEQUITY",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "cashflow",
+      "indicator": "NETFINACASHFLOW",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "cashflow",
+      "indicator": "NETINVCASHFLOW",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "cashflow",
+      "indicator": "NETOPERATECASHFLOW",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "cashflow",
+      "indicator": "NICASHEQUI",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "income",
+      "indicator": "NETPROFIT",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "income",
+      "indicator": "OPERATEREVE",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    },
+    {
+      "statement_type": "income",
+      "indicator": "PARENTNETPROFIT",
+      "rows": 6,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 6
+    }
+  ],
+  "dividend_completeness": [
+    {
+      "indicator": "DIVCAPITPSRATIO",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 0
+    },
+    {
+      "indicator": "DIVCASHPSAFTAX",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVCASHPSBFTAX",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVEXDATE",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVIMPLANNCDATE",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVPAYDATE",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVRECORDDATE",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVRTISSBASESHARES",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "DIVSTOCKPSRATIO",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 0
+    },
+    {
+      "indicator": "DIVWAY",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    },
+    {
+      "indicator": "SHAREBASEDATE",
+      "rows": 4,
+      "symbols": 3,
+      "report_dates": 2,
+      "non_null": 4
+    }
+  ],
+  "data_map": [
+    {
+      "dataset": "financial_statement_fact",
+      "grain": "source+symbol+statement_type+report_date+indicator",
+      "purpose": "Choice CTR三张财务报表核心事实",
+      "unit_policy": "官方字段标注为元，unit=CNY",
+      "source": "choice"
+    },
+    {
+      "dataset": "dividend_fact",
+      "grain": "source+symbol+report_date+indicator",
+      "purpose": "Choice DividendImplementationInfo分红实施事实",
+      "unit_policy": "按字段保存CNY/share、10k_share、date、text或vendor_raw_ratio",
+      "source": "choice"
+    },
+    {
+      "dataset": "financial_ingestion_run",
+      "grain": "run_id",
+      "purpose": "CTR下载、字段返回和错误审计",
+      "unit_policy": "不适用",
+      "source": "choice"
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "metadata": {
+    "snapshot_date": "2026-09-01",
+    "calendar_start_date": "2010-01-01",
+    "calendar_end_date": "2026-09-01",
+    "markets": [
+      "CNSESH",
+      "CNSESZ"
+    ],
+    "sector_code": "001004",
+    "universe": "all_a_001004",
+    "batch_size": 100,
+    "database_path": "D:\\OneDrive\\桌面\\数据基座代码\\qianji_openbb_mini\\notebooks\\data\\qianji_market.db",
+    "choice_login_mode": "userInfo",
+    "choice_username_configured": false,
+    "choice_password_configured": false,
+    "create_backup": true,
+    "run_idempotency_check": true
+  },
+  "first_refresh": {
+    "source": "choice",
+    "universe": "all_a_001004",
+    "snapshot_date": "2026-09-01",
+    "previous_snapshot_date": null,
+    "current_count": 5214,
+    "added_symbols": [],
+    "removed_symbols": [],
+    "modified_symbols": [],
+    "unchanged_count": 5214,
+    "security_received_rows": 5214,
+    "security_stored_rows": 5214,
+    "calendar_received_rows": 12176,
+    "calendar_stored_rows": 12176,
+    "errors": {},
+    "started_at": "2026-09-02T00:47:43.899644Z",
+    "finished_at": "2026-09-02T00:49:26.624530Z"
+  },
+  "second_refresh": {
+    "source": "choice",
+    "universe": "all_a_001004",
+    "snapshot_date": "2026-09-01",
+    "previous_snapshot_date": null,
+    "current_count": 5214,
+    "added_symbols": [],
+    "removed_symbols": [],
+    "modified_symbols": [],
+    "unchanged_count": 5214,
+    "security_received_rows": 5214,
+    "security_stored_rows": 5214,
+    "calendar_received_rows": 12176,
+    "calendar_stored_rows": 12176,
+    "errors": {},
+    "started_at": "2026-09-02T00:49:26.669522Z",
+    "finished_at": "2026-09-02T00:50:20.998386Z"
+  },
+  "quality_summary": {
+    "passed": 20,
+    "failed": 0
+  },
+  "quality_gates": [
+    {
+      "质量门槛": "第一次刷新无接口错误",
+      "通过": true,
+      "证据": "errors={}"
+    },
+    {
+      "质量门槛": "全A成员非空",
+      "通过": true,
+      "证据": "current_count=5214"
+    },
+    {
+      "质量门槛": "主数据与成员数量一致",
+      "通过": true,
+      "证据": "master=5214, members=5214"
+    },
+    {
+      "质量门槛": "当前快照与成员数量一致",
+      "通过": true,
+      "证据": "snapshot=5214"
+    },
+    {
+      "质量门槛": "当前快照无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "当前成员均有主数据",
+      "通过": true,
+      "证据": "master=5214, snapshot=5214"
+    },
+    {
+      "质量门槛": "成员分类数量关系成立",
+      "通过": true,
+      "证据": "current=5214, added=0, modified=0, unchanged=5214"
+    },
+    {
+      "质量门槛": "退出板块不被自动判定退市",
+      "通过": true,
+      "证据": "本期无removed记录"
+    },
+    {
+      "质量门槛": "长期日历自然日数量完整",
+      "通过": true,
+      "证据": "actual=12176, expected=12176"
+    },
+    {
+      "质量门槛": "各市场覆盖起止日期",
+      "通过": true,
+      "证据": "[{'market': 'CNSESH', 'rows': 6088, 'unique_dates': 6088, 'first_date': '2010-01-01', 'last_date': '2026-09-01', 'open_days': 4047}, {'market': 'CNSESZ', 'rows': 6088, 'unique_dates': 6088, 'first_date': '2010-01-01', 'last_date': '2026-09-01', 'open_days': 4047}]"
+    },
+    {
+      "质量门槛": "长期日历无重复主键",
+      "通过": true,
+      "证据": "duplicates=0"
+    },
+    {
+      "质量门槛": "长期日历日期均可解析",
+      "通过": true,
+      "证据": "bad_dates=0"
+    },
+    {
+      "质量门槛": "开闭市标记仅为0或1",
+      "通过": true,
+      "证据": "bad_flags=0"
+    },
+    {
+      "质量门槛": "每个市场存在开市日",
+      "通过": true,
+      "证据": "[{'market': 'CNSESH', 'open_days': 4047}, {'market': 'CNSESZ', 'open_days': 4047}]"
+    },
+    {
+      "质量门槛": "周末未错误标为开市",
+      "通过": true,
+      "证据": "weekend_open=0"
+    },
+    {
+      "质量门槛": "已有Choice日线均匹配开市日",
+      "通过": true,
+      "证据": "checked=0, not_open_or_missing=0"
+    },
+    {
+      "质量门槛": "第二次刷新无接口错误",
+      "通过": true,
+      "证据": "{}"
+    },
+    {
+      "质量门槛": "第二次刷新核心表不增长",
+      "通过": true,
+      "证据": "[{'stage': '刷新前', 'security_master_choice': 0, 'calendar_scope': 0, 'current_snapshot': 0, 'current_changes': 0, 'refresh_run_log': 0}, {'stage': '第一次刷新后', 'security_master_choice': 5214, 'calendar_scope': 12176, 'current_snapshot': 5214, 'current_changes': 0, 'refresh_run_log': 1}, {'stage': '第二次刷新后', 'security_master_choice': 5214, 'calendar_scope': 12176, 'current_snapshot': 5214, 'current_changes': 0, 'refresh_run_log': 2}]"
+    },
+    {
+      "质量门槛": "第二次刷新变更结论一致",
+      "通过": true,
+      "证据": "added/removed/modified两次一致"
+    },
+    {
+      "质量门槛": "SQLite完整性检查通过",
+      "通过": true,
+      "证据": "ok"
+    }
+  ],
+  "idempotency_counts": [
+    {
+      "stage": "刷新前",
+      "security_master_choice": 0,
+      "calendar_scope": 0,
+      "current_snapshot": 0,
+      "current_changes": 0,
+      "refresh_run_log": 0
+    },
+    {
+      "stage": "第一次刷新后",
+      "security_master_choice": 5214,
+      "calendar_scope": 12176,
+      "current_snapshot": 5214,
+      "current_changes": 0,
+      "refresh_run_log": 1
+    },
+    {
+      "stage": "第二次刷新后",
+      "security_master_choice": 5214,
+      "calendar_scope": 12176,
+      "current_snapshot": 5214,
+      "current_changes": 0,
+      "refresh_run_log": 2
+    }
+  ],
+  "change_summary": [
+    {
+      "change_type": "added",
+      "count": 0,
+      "meaning": "本期进入板块"
+    },
+    {
+      "change_type": "removed",
+      "count": 0,
+      "meaning": "本期退出板块，不等同退市"
+    },
+    {
+      "change_type": "modified",
+      "count": 0,
+      "meaning": "成员仍在但主数据字段变化"
+    },
+    {
+      "change_type": "unchanged",
+      "count": 5214,
+      "meaning": "成员仍在且字段未变"
+    }
+  ],
+  "changes": [],
+  "calendar_summary": [
+    {
+      "market": "CNSESH",
+      "rows": 6088,
+      "unique_dates": 6088,
+      "first_date": "2010-01-01",
+      "last_date": "2026-09-01",
+      "open_days": 4047
+    },
+    {
+      "market": "CNSESZ",
+      "rows": 6088,
+      "unique_dates": 6088,
+      "first_date": "2010-01-01",
+      "last_date": "2026-09-01",
+      "open_days": 4047
+    }
+  ],
+  "data_map": [
+    {
+      "dataset": "security_master",
+      "grain": "source+symbol",
+      "purpose": "当前证券身份",
+      "refresh": "每日/按需幂等覆盖",
+      "source": "choice"
+    },
+    {
+      "dataset": "trading_calendar",
+      "grain": "source+market+trade_date",
+      "purpose": "长期自然日开闭市",
+      "refresh": "每日向后延展并允许历史修订",
+      "source": "choice"
+    },
+    {
+      "dataset": "security_universe_snapshot",
+      "grain": "source+universe+snapshot_date+symbol",
+      "purpose": "每期全A成员及主数据摘要",
+      "refresh": "每日快照，可重复覆盖",
+      "source": "choice"
+    },
+    {
+      "dataset": "security_master_change",
+      "grain": "source+universe+snapshot_date+symbol+change_type",
+      "purpose": "新增/退出板块/字段变更",
+      "refresh": "由相邻快照计算，可重复覆盖",
+      "source": "choice"
+    },
+    {
+      "dataset": "reference_refresh_run",
+      "grain": "run_id",
+      "purpose": "刷新审计证据",
+      "refresh": "每次运行新增",
+      "source": "choice"
+    }
+  ]
+}

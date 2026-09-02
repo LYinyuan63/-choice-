@@ -1,57 +1,65 @@
-"""Choice small-sample financial statement and dividend ingestion."""
+"""Choice official CTR financial statement and dividend ingestion."""
 
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-from qianji_data_mini.adapters.choice import ChoiceAdapter
+from qianji_data_mini.adapters.choice import ChoiceAdapter, ChoiceDataLimitError
 from qianji_data_mini.db import Database
 from qianji_data_mini.models import FinancialIngestResult
 
 
-DEFAULT_INDICATOR_CANDIDATES: dict[str, list[str]] = {
-    "income": [
-        "TOTALOPERATEREVE",
-        "OPERATEREVE",
-        "OPERATEPROFIT",
-        "TOTALPROFIT",
-        "PARENTNETPROFIT",
-        "NETPROFIT",
-    ],
-    "balance": [
-        "TOTALASSETS",
-        "TOTALLIAB",
-        "PARENTNETASSET",
-        "TOTALEQUITY",
-    ],
+# Official fields validated by Notebook 09. The list is deliberately small so
+# the first production run remains bounded, reproducible and easy to audit.
+DEFAULT_CTR_FIELDS: dict[str, list[str]] = {
+    "income": ["OPERATEREVE", "NETPROFIT", "PARENTNETPROFIT"],
+    "balance": ["SUMASSET", "SUMLIAB", "SUMSHEQUITY"],
     "cashflow": [
-        "NETCASHOPERATE",
-        "NETCASHINVEST",
-        "NETCASHFINANCE",
-        "CASHNETI",
+        "NETOPERATECASHFLOW",
+        "NETINVCASHFLOW",
+        "NETFINACASHFLOW",
+        "NICASHEQUI",
     ],
     "dividend": [
-        "DIVIDENDPLANEXPLAIN",
-        "DIVIDENDPLAN",
-        "CASHDIVIDENDPERSHARE",
-        "RECORDDATE",
-        "EXDIVIDENDDATE",
-        "DIVIDENDPAYDATE",
+        "DIVWAY",
+        "DIVCASHPSBFTAX",
+        "DIVCASHPSAFTAX",
+        "DIVSTOCKPSRATIO",
+        "DIVCAPITPSRATIO",
+        "DIVRTISSBASESHARES",
+        "SHAREBASEDATE",
+        "DIVIMPLANNCDATE",
+        "DIVRECORDDATE",
+        "DIVEXDATE",
+        "DIVPAYDATE",
     ],
 }
+
+# Backward-compatible import name used by early notebooks.
+DEFAULT_INDICATOR_CANDIDATES = DEFAULT_CTR_FIELDS
 
 
 def _as_date(value: date | str) -> date:
     return value if isinstance(value, date) else date.fromisoformat(value)
 
 
-def _normalized_candidates(
+def _normalized_fields(
     value: dict[str, Iterable[str]] | None,
 ) -> dict[str, list[str]]:
-    source = value or DEFAULT_INDICATOR_CANDIDATES
-    return {
+    environment_names = {
+        "income": "CHOICE_CTR_INCOME_FIELDS",
+        "balance": "CHOICE_CTR_BALANCE_FIELDS",
+        "cashflow": "CHOICE_CTR_CASHFLOW_FIELDS",
+        "dividend": "CHOICE_CTR_DIVIDEND_FIELDS",
+    }
+    source = value or {
+        dataset: os.getenv(environment_names[dataset], ",".join(defaults)).split(",")
+        for dataset, defaults in DEFAULT_CTR_FIELDS.items()
+    }
+    normalized = {
         dataset: list(
             dict.fromkeys(
                 str(item).strip().upper()
@@ -61,6 +69,10 @@ def _normalized_candidates(
         )
         for dataset in ("income", "balance", "cashflow", "dividend")
     }
+    empty = [dataset for dataset, fields in normalized.items() if not fields]
+    if empty:
+        raise ValueError(f"以下数据集没有配置CTR字段：{','.join(empty)}。")
+    return normalized
 
 
 def ingest_choice_financial_sample(
@@ -68,12 +80,15 @@ def ingest_choice_financial_sample(
     symbols: Iterable[str],
     report_dates: Iterable[date | str],
     indicator_candidates: dict[str, Iterable[str]] | None = None,
-    financial_options_template: str = "ReportDate={report_date},type=1",
-    dividend_options_template: str = "ReportDate={report_date},PayYear={year}",
-    probe_indicators: bool = True,
+    report_type: int | None = None,
     database_path: str | Path | None = None,
 ) -> FinancialIngestResult:
-    """Probe accessible indicators, then ingest a bounded real-data sample."""
+    """Ingest a bounded Choice sample through official CTR report commands.
+
+    Each statement is requested per symbol and period, so one permission or
+    data error does not discard the other evidence. Dividends are requested
+    once per symbol over the complete report-period range.
+    """
     symbol_list = list(
         dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
     )
@@ -82,10 +97,16 @@ def ingest_choice_financial_sample(
         raise ValueError("至少需要一个证券代码。")
     if not dates:
         raise ValueError("至少需要一个报告期。")
+    actual_report_type = (
+        int(os.getenv("CHOICE_CTR_REPORT_TYPE", "1"))
+        if report_type is None
+        else report_type
+    )
+    if actual_report_type not in {1, 2, 3, 4}:
+        raise ValueError("report_type必须是1、2、3或4。")
 
-    candidates = _normalized_candidates(indicator_candidates)
-    selected: dict[str, list[str]] = {key: [] for key in candidates}
-    rejected: dict[str, dict[str, str]] = {key: {} for key in candidates}
+    selected = _normalized_fields(indicator_candidates)
+    rejected: dict[str, dict[str, str]] = {key: {} for key in selected}
     errors: dict[str, str] = {}
     statement_records = []
     dividend_records = []
@@ -93,69 +114,50 @@ def ingest_choice_financial_sample(
     database = Database(database_path)
     adapter = ChoiceAdapter()
     try:
-        for dataset, indicators in candidates.items():
-            options_template = (
-                dividend_options_template
-                if dataset == "dividend"
-                else financial_options_template
-            )
-            if not probe_indicators:
-                selected[dataset] = indicators
-                continue
-            for indicator in indicators:
-                try:
-                    valid, message = adapter.probe_css_indicator(
-                        symbol=symbol_list[0],
-                        report_date=dates[-1],
-                        indicator=indicator,
-                        options_template=options_template,
+        statement_tasks = [
+            (symbol, report_date, statement_type)
+            for symbol in symbol_list
+            for report_date in dates
+            for statement_type in ("income", "balance", "cashflow")
+        ]
+        for task_index, (symbol, report_date, statement_type) in enumerate(
+            statement_tasks, start=1
+        ):
+            request_key = f"{statement_type}:{symbol}:{report_date.isoformat()}"
+            try:
+                statement_records.extend(
+                    adapter.fetch_financial_statement_facts(
+                        symbols=[symbol],
+                        report_date=report_date,
+                        statement_type=statement_type,
+                        indicators=selected[statement_type],
+                        report_type=actual_report_type,
                     )
-                except Exception as exc:
-                    valid = False
-                    message = f"{type(exc).__name__}: {exc}"
-                if valid:
-                    selected[dataset].append(indicator)
-                else:
-                    rejected[dataset][indicator] = message
-            if not selected[dataset]:
-                errors[f"indicator_probe:{dataset}"] = (
-                    "候选指标全部未通过。请使用Choice命令生成器替换该数据集指标。"
                 )
+            except ChoiceDataLimitError as exc:
+                errors[request_key] = f"{type(exc).__name__}: {exc}"
+                skipped = len(statement_tasks) - task_index
+                errors["financial_quota_circuit_breaker"] = (
+                    "检测到Choice财务数据额度上限，已停止后续财务请求，"
+                    f"避免连续无效调用；本次跳过{skipped}个财务请求。"
+                )
+                break
+            except Exception as exc:
+                errors[request_key] = f"{type(exc).__name__}: {exc}"
 
-        for report_date in dates:
-            for statement_type in ("income", "balance", "cashflow"):
-                indicators = selected[statement_type]
-                if not indicators:
-                    continue
-                try:
-                    statement_records.extend(
-                        adapter.fetch_financial_statement_facts(
-                            symbols=symbol_list,
-                            report_date=report_date,
-                            statement_type=statement_type,
-                            indicators=indicators,
-                            options_template=financial_options_template,
-                        )
+        for symbol in symbol_list:
+            try:
+                dividend_records.extend(
+                    adapter.fetch_dividend_facts(
+                        symbols=[symbol],
+                        report_dates=dates,
+                        indicators=selected["dividend"],
                     )
-                except Exception as exc:
-                    errors[f"{statement_type}:{report_date.isoformat()}"] = (
-                        f"{type(exc).__name__}: {exc}"
-                    )
-
-            if selected["dividend"]:
-                try:
-                    dividend_records.extend(
-                        adapter.fetch_dividend_facts(
-                            symbols=symbol_list,
-                            report_date=report_date,
-                            indicators=selected["dividend"],
-                            options_template=dividend_options_template,
-                        )
-                    )
-                except Exception as exc:
-                    errors[f"dividend:{report_date.isoformat()}"] = (
-                        f"{type(exc).__name__}: {exc}"
-                    )
+                )
+            except Exception as exc:
+                errors[
+                    f"dividend:{symbol}:{dates[0].isoformat()}:{dates[-1].isoformat()}"
+                ] = f"{type(exc).__name__}: {exc}"
     finally:
         adapter.close()
 

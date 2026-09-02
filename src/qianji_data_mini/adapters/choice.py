@@ -8,6 +8,8 @@ from bisect import bisect_left, bisect_right
 from datetime import date, datetime, timedelta
 from typing import Any, Iterable
 
+import pandas as pd
+
 from qianji_data_mini.adapters.base import AdapterError, DailyBarAdapter
 from qianji_data_mini.config import env_float
 from qianji_data_mini.models import (
@@ -29,11 +31,14 @@ def normalize_choice_date(value: object) -> date:
     text = str(value).strip()
     separated = re.match(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})", text)
     compact = re.match(r"^(\d{4})(\d{2})(\d{2})$", text)
+    month_first = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})$", text)
     matched = separated or compact
-    if not matched:
+    if matched:
+        year, month, day = (int(item) for item in matched.groups())
+    elif month_first:
+        month, day, year = (int(item) for item in month_first.groups())
+    else:
         raise AdapterError(f"Choice 返回了无法识别的日期格式：{value!r}")
-
-    year, month, day = (int(item) for item in matched.groups())
     try:
         return date(year, month, day)
     except ValueError as exc:
@@ -42,7 +47,14 @@ def normalize_choice_date(value: object) -> date:
 
 def normalize_choice_optional_date(value: object) -> date | None:
     """Normalize optional Choice dates without turning placeholders into dates."""
-    if value in (None, "", "--", "None", "null", 0, "0"):
+    if value is None:
+        return None
+    try:
+        if bool(pd.isna(value)):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if str(value).strip() in {"", "--", "None", "null", "NULL", "0"}:
         return None
     return normalize_choice_date(value)
 
@@ -77,7 +89,14 @@ def _asset_type_from_symbol(symbol: str) -> str:
 
 def _fact_value(value: object) -> tuple[float | None, str | None]:
     """Preserve vendor values while extracting a safe numeric representation."""
-    if value in (None, "", "--", "None", "null", "NULL"):
+    if value is None:
+        return None, None
+    try:
+        if bool(pd.isna(value)):
+            return None, None
+    except (TypeError, ValueError):
+        pass
+    if str(value).strip() in {"", "--", "None", "null", "NULL"}:
         return None, None
     if isinstance(value, bool):
         return float(value), str(value)
@@ -100,6 +119,33 @@ def _format_options(template: str, report_date: date) -> str:
         report_date_compact=report_date.strftime("%Y%m%d"),
         year=report_date.year,
     )
+
+
+CHOICE_CTR_REPORTS: dict[str, str] = {
+    "income": "IncomeStatementSHSZ",
+    "balance": "BalanceStatementSHSZ",
+    "cashflow": "CashFlowStatementSHSZ",
+}
+
+CHOICE_DIVIDEND_CTR = "DividendImplementationInfo"
+
+CHOICE_DIVIDEND_UNITS: dict[str, str] = {
+    "DIVWAY": "text",
+    "DIVCASHPSBFTAX": "CNY/share",
+    "DIVCASHPSAFTAX": "CNY/share",
+    "DIVSTOCKPSRATIO": "vendor_raw_ratio",
+    "DIVCAPITPSRATIO": "vendor_raw_ratio",
+    "DIVRTISSBASESHARES": "10k_share",
+    "SHAREBASEDATE": "date",
+    "DIVIMPLANNCDATE": "date",
+    "DIVRECORDDATE": "date",
+    "DIVEXDATE": "date",
+    "DIVPAYDATE": "date",
+}
+
+
+class ChoiceDataLimitError(AdapterError):
+    """Choice account-side data quota or flow allowance is exhausted."""
 
 
 class ChoiceAdapter(DailyBarAdapter):
@@ -422,30 +468,41 @@ class ChoiceAdapter(DailyBarAdapter):
             current += timedelta(days=1)
         return records
 
-    def probe_css_indicator(
-        self,
+    @staticmethod
+    def _ctr_dataframe(
+        response: Any,
         *,
-        symbol: str,
-        report_date: date,
-        indicator: str,
-        options_template: str,
-    ) -> tuple[bool, str]:
-        """Probe one indicator using css without assuming cfc response layout."""
-        response = self.c.css(
-            symbol.upper(),
-            indicator.upper(),
-            _format_options(options_template, report_date),
-        )
-        if getattr(response, "ErrorCode", -1) != 0:
-            return False, (
-                f"ErrorCode={getattr(response, 'ErrorCode', -1)} "
-                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
+        ctr_name: str,
+        required_fields: Iterable[str],
+    ) -> pd.DataFrame:
+        """Validate and normalize a Choice CTR pandas response."""
+        if not isinstance(response, pd.DataFrame):
+            error_code = getattr(response, "ErrorCode", -1)
+            error_message = getattr(response, "ErrorMsg", "未返回错误说明")
+            if str(error_code) == "10001029" or "data limit exceeded" in str(
+                error_message
+            ).lower():
+                raise ChoiceDataLimitError(
+                    "Choice数据额度已达到上限（10001029: data limit exceeded）。"
+                )
+            raise AdapterError(
+                f"Choice ctr {ctr_name} 返回错误"
+                f"（{error_code}）：{error_message}"
             )
-        try:
-            self._parse_css_response(response, [symbol.upper()])
-        except AdapterError as exc:
-            return False, str(exc)
-        return True, "ok"
+        frame = response.copy()
+        frame.columns = [str(column).strip().upper() for column in frame.columns]
+        if frame.empty:
+            raise AdapterError(f"Choice ctr {ctr_name} 请求成功但报表为空。")
+        missing = [
+            str(field).upper()
+            for field in required_fields
+            if str(field).upper() not in frame.columns
+        ]
+        if missing:
+            raise AdapterError(
+                f"Choice ctr {ctr_name} 缺少字段：{','.join(missing)}。"
+            )
+        return frame
 
     def fetch_financial_statement_facts(
         self,
@@ -454,8 +511,9 @@ class ChoiceAdapter(DailyBarAdapter):
         report_date: date,
         statement_type: str,
         indicators: Iterable[str],
-        options_template: str,
+        report_type: int = 1,
     ) -> list[FinancialStatementFact]:
+        """Fetch one reporting period through the official Choice CTR reports."""
         symbol_list = list(
             dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
         )
@@ -464,23 +522,38 @@ class ChoiceAdapter(DailyBarAdapter):
         )
         if statement_type not in {"income", "balance", "cashflow"}:
             raise ValueError("statement_type必须是income、balance或cashflow。")
+        if report_type not in {1, 2, 3, 4}:
+            raise ValueError("report_type必须是1、2、3或4。")
         if not symbol_list or not indicator_list:
             return []
-        response = self.c.css(
-            ",".join(symbol_list),
-            ",".join(indicator_list),
-            _format_options(options_template, report_date),
-        )
-        if getattr(response, "ErrorCode", -1) != 0:
-            raise AdapterError(
-                f"Choice css {statement_type}返回错误"
-                f"（{getattr(response, 'ErrorCode', -1)}）："
-                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
-            )
-        parsed = self._parse_css_response(response, symbol_list)
+        ctr_name = CHOICE_CTR_REPORTS[statement_type]
         records: list[FinancialStatementFact] = []
-        for symbol, raw in parsed:
-            for indicator, value in raw.items():
+        for symbol in symbol_list:
+            fields = ["REPORTDATE", *indicator_list]
+            options = (
+                f"SecuCode={symbol},ReportDate={report_date.isoformat()},"
+                f"ReportType={report_type},RECVtimeout=60,Ispandas=1"
+            )
+            response = self.c.ctr(ctr_name, ",".join(fields), options)
+            frame = self._ctr_dataframe(
+                response,
+                ctr_name=ctr_name,
+                required_fields=fields,
+            )
+            returned_dates = frame["REPORTDATE"].map(normalize_choice_optional_date)
+            matched = frame.loc[returned_dates == report_date]
+            if matched.empty:
+                available = sorted(
+                    item.isoformat() for item in returned_dates.dropna().unique()
+                )
+                raise AdapterError(
+                    f"Choice ctr {ctr_name} 未返回请求报告期"
+                    f" {report_date.isoformat()}；实际报告期：{available}。"
+                )
+            row = matched.iloc[-1]
+            raw_row = {str(key): value for key, value in row.to_dict().items()}
+            for indicator in indicator_list:
+                value = row[indicator]
                 numeric, text = _fact_value(value)
                 records.append(
                     FinancialStatementFact(
@@ -491,8 +564,8 @@ class ChoiceAdapter(DailyBarAdapter):
                         value_numeric=numeric,
                         value_text=text,
                         currency="CNY",
-                        unit="vendor_raw",
-                        raw={"value": value},
+                        unit="CNY",
+                        raw={"ctr_name": ctr_name, "row": raw_row},
                     )
                 )
         return records
@@ -501,46 +574,87 @@ class ChoiceAdapter(DailyBarAdapter):
         self,
         *,
         symbols: Iterable[str],
-        report_date: date,
+        report_dates: Iterable[date],
         indicators: Iterable[str],
-        options_template: str,
     ) -> list[DividendFact]:
+        """Fetch implemented dividends using report-period filtering (DateType=3)."""
         symbol_list = list(
             dict.fromkeys(str(item).strip().upper() for item in symbols if str(item).strip())
         )
+        date_list = sorted(set(report_dates))
         indicator_list = list(
             dict.fromkeys(str(item).strip().upper() for item in indicators if str(item).strip())
         )
-        if not symbol_list or not indicator_list:
+        if not symbol_list or not date_list or not indicator_list:
             return []
-        response = self.c.css(
-            ",".join(symbol_list),
-            ",".join(indicator_list),
-            _format_options(options_template, report_date),
-        )
-        if getattr(response, "ErrorCode", -1) != 0:
-            raise AdapterError(
-                "Choice css dividend返回错误"
-                f"（{getattr(response, 'ErrorCode', -1)}）："
-                f"{getattr(response, 'ErrorMsg', '未返回错误说明')}"
-            )
-        parsed = self._parse_css_response(response, symbol_list)
         records: list[DividendFact] = []
-        for symbol, raw in parsed:
-            for indicator, value in raw.items():
-                numeric, text = _fact_value(value)
-                records.append(
-                    DividendFact(
-                        symbol=symbol,
-                        report_date=report_date,
-                        indicator=indicator,
-                        value_numeric=numeric,
-                        value_text=text,
-                        currency="CNY",
-                        unit="vendor_raw",
-                        raw={"value": value},
-                    )
+        requested_dates = set(date_list)
+        for symbol in symbol_list:
+            fields = ["SECUCODE", "REPORTDATE", *indicator_list]
+            options = (
+                f"secucode={symbol},StartDate={date_list[0].isoformat()},"
+                f"EndDate={date_list[-1].isoformat()},DateType=3,"
+                "RECVtimeout=60,Ispandas=1"
+            )
+            response = self.c.ctr(
+                CHOICE_DIVIDEND_CTR,
+                ",".join(fields),
+                options,
+            )
+            if isinstance(response, pd.DataFrame) and response.empty:
+                continue
+            frame = self._ctr_dataframe(
+                response,
+                ctr_name=CHOICE_DIVIDEND_CTR,
+                required_fields=fields,
+            )
+            frame["_REPORT_DATE"] = frame["REPORTDATE"].map(
+                normalize_choice_optional_date
+            )
+            frame = frame[frame["_REPORT_DATE"].isin(requested_dates)].copy()
+            if frame.empty:
+                continue
+            if "DIVIMPLANNCDATE" in frame.columns:
+                frame["_SORT_DATE"] = frame["DIVIMPLANNCDATE"].map(
+                    normalize_choice_optional_date
                 )
+                frame["_SORT_DATE"] = frame["_SORT_DATE"].map(
+                    lambda value: value.isoformat() if value else ""
+                )
+                frame = frame.sort_values("_SORT_DATE", na_position="first")
+            frame = frame.drop_duplicates("_REPORT_DATE", keep="last")
+
+            for _, row in frame.iterrows():
+                actual_report_date = row["_REPORT_DATE"]
+                if actual_report_date is None:
+                    continue
+                raw_row = {
+                    str(key): value
+                    for key, value in row.drop(
+                        labels=["_REPORT_DATE", "_SORT_DATE"], errors="ignore"
+                    ).to_dict().items()
+                }
+                for indicator in indicator_list:
+                    value = row[indicator]
+                    unit = CHOICE_DIVIDEND_UNITS.get(indicator, "vendor_raw")
+                    if unit == "date":
+                        normalized = normalize_choice_optional_date(value)
+                        numeric = None
+                        text = normalized.isoformat() if normalized else _fact_value(value)[1]
+                    else:
+                        numeric, text = _fact_value(value)
+                    records.append(
+                        DividendFact(
+                            symbol=symbol,
+                            report_date=actual_report_date,
+                            indicator=indicator,
+                            value_numeric=numeric,
+                            value_text=text,
+                            currency="CNY",
+                            unit=unit,
+                            raw={"ctr_name": CHOICE_DIVIDEND_CTR, "row": raw_row},
+                        )
+                    )
         return records
 
     def close(self) -> None:

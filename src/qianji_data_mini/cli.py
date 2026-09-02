@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from qianji_data_mini.db import Database
+from qianji_data_mini.financial_ingest import ingest_choice_financial_sample
 from qianji_data_mini.ingest import ingest_daily
 
 
@@ -21,6 +22,19 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_parser.add_argument("--symbols", required=True, help="逗号分隔代码")
     ingest_parser.add_argument("--start", required=True)
     ingest_parser.add_argument("--end", required=True)
+
+    financial_parser = sub.add_parser(
+        "ingest-choice-financial",
+        help="通过Choice官方CTR下载财务报表与分红并落库",
+    )
+    financial_parser.add_argument("--symbols", required=True, help="逗号分隔代码")
+    financial_parser.add_argument(
+        "--report-dates", required=True, help="逗号分隔报告期，格式YYYY-MM-DD"
+    )
+    financial_parser.add_argument(
+        "--report-type", type=int, choices=[1, 2, 3, 4],
+        help="默认读取CHOICE_CTR_REPORT_TYPE，未配置时为1",
+    )
 
     query_parser = sub.add_parser("query", help="查询日线")
     query_parser.add_argument("--symbol", required=True)
@@ -53,6 +67,14 @@ def main() -> None:
             database_path=database.path,
         )
         print(result.model_dump_json(indent=2))
+    elif args.command == "ingest-choice-financial":
+        result = ingest_choice_financial_sample(
+            symbols=args.symbols.split(","),
+            report_dates=args.report_dates.split(","),
+            report_type=args.report_type,
+            database_path=database.path,
+        )
+        print(result.model_dump_json(indent=2))
     elif args.command == "query":
         frame = database.query_dataframe(
             symbol=args.symbol, source=args.source,
@@ -74,4 +96,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

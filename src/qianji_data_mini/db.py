@@ -747,6 +747,7 @@ class Database:
         *,
         source: str = "choice",
         symbols: Iterable[str] | None = None,
+        statement_type: str | None = None,
         start_report_date: date | str | None = None,
         end_report_date: date | str | None = None,
     ) -> pd.DataFrame:
@@ -757,6 +758,13 @@ class Database:
             placeholders = ",".join("?" for _ in symbol_list)
             sql += f" AND symbol IN ({placeholders})"
             params.extend(symbol_list)
+        if statement_type is not None:
+            if statement_type not in {"income", "balance", "cashflow"}:
+                raise ValueError(
+                    "statement_type必须是income、balance或cashflow。"
+                )
+            sql += " AND statement_type=?"
+            params.append(statement_type)
         if start_report_date is not None:
             sql += " AND report_date>=?"
             params.append(str(start_report_date))
